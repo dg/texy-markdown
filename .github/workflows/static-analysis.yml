@@ -1,0 +1,27 @@
+name: Static Analysis
+
+on: [push, pull_request]
+
+jobs:
+    phpstan:
+        name: PHPStan
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  path: markdown
+            - uses: actions/checkout@v7
+              with:
+                  repository: dg/texy
+                  path: _texy
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.2
+                  extensions: mbstring
+                  coverage: none
+
+            - run: composer install --no-progress --prefer-dist
+              working-directory: markdown
+            - run: composer phpstan -- --no-progress
+              working-directory: markdown

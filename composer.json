@@ -1,0 +1,56 @@
+{
+	"name": "texy/markdown",
+	"description": "📜 Texy Markdown: CommonMark and GitHub Flavored Markdown for Texy, in both directions, so Markdown gets Texy's typography and safe HTML.",
+	"keywords": ["markdown", "commonmark", "gfm", "github flavored markdown", "texy", "markdown to html", "typography"],
+	"homepage": "https://texy.deegee.dev",
+	"license": ["BSD-3-Clause", "GPL-2.0-only", "GPL-3.0-only"],
+	"authors": [
+		{
+			"name": "David Grudl",
+			"homepage": "https://davidgrudl.com"
+		}
+	],
+	"require": {
+		"php": "8.2 - 8.6",
+		"ext-mbstring": "*",
+		"texy/texy": "4.0.x-dev"
+	},
+	"require-dev": {
+		"nette/tester": "^2.5",
+		"tracy/tracy": "^2.9",
+		"phpstan/phpstan": "^2.2@stable",
+		"phpstan/extension-installer": "^1.4@stable",
+		"nette/phpstan-rules": "^1.0",
+		"jetbrains/phpstorm-attributes": "^1.2"
+	},
+	"repositories": [
+		{
+			"type": "path",
+			"url": "../_texy",
+			"options": {
+				"symlink": false
+			}
+		}
+	],
+	"autoload": {
+		"psr-4": {
+			"Texy\\Markdown\\": "src"
+		}
+	},
+	"minimum-stability": "dev",
+	"prefer-stable": true,
+	"scripts": {
+		"phpstan": "phpstan analyse",
+		"tester": "tester tests -s"
+	},
+	"extra": {
+		"branch-alias": {
+			"dev-master": "1.0-dev"
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"phpstan/extension-installer": true
+		}
+	}
+}
