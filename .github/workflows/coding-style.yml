@@ -1,0 +1,42 @@
+name: Coding Style
+
+on: [push, pull_request]
+
+jobs:
+    dresscode:
+        name: DressCode
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  path: markdown
+            - uses: actions/checkout@v7
+              with:
+                  repository: dg/texy
+                  path: _texy
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  coverage: none
+
+            - run: composer install --no-progress --prefer-dist
+              working-directory: markdown
+            - run: composer create-project dresscode/dresscode temp/dresscode ^1.1 --no-progress
+              working-directory: markdown
+            - run: php temp/dresscode/bin/dresscode check
+              working-directory: markdown
+
+
+    nette_cc:
+        name: Nette Code Checker
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: 8.4
+                  coverage: none
+
+            - run: composer create-project nette/code-checker temp/code-checker ^3 --no-progress
+            - run: php temp/code-checker/code-checker --strict-types --no-progress
