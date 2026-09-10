@@ -4,8 +4,12 @@
 AGENTS.md       export-ignore
 dresscode.neon  export-ignore
 phpstan*.neon   export-ignore
+tools/          export-ignore
 tests/          export-ignore
 
 *               text=auto
 *.php*          diff=php
 *.sh            text eol=lf
+
+tests/fixtures/*.json      -diff
+tests/fixtures/*.expected  -diff

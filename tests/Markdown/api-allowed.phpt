@@ -1,0 +1,78 @@
+<?php declare(strict_types=1);
+
+/**
+ * Test: switching individual syntaxes off through $allowed.
+ */
+
+use Tester\Assert;
+use Texy\Markdown\Markdown;
+use Texy\Markdown\Syntax;
+use Texy\Markdown\Tests\SpecRenderer;
+
+require __DIR__ . '/../bootstrap.php';
+
+
+function render(Markdown $markdown, string $text): string
+{
+	$document = $markdown->parse($text);
+	$markdown->transform($document);
+	return (new SpecRenderer)->render($document);
+}
+
+
+test('a CommonMark syntax can be switched off', function () {
+	$markdown = new Markdown;
+	$markdown->allowed[Syntax::HtmlInline] = false;
+	$markdown->allowed[Syntax::HtmlBlock] = false;
+
+	Assert::same("<p>&lt;b&gt;text&lt;/b&gt;</p>\n", render($markdown, '<b>text</b>'));
+});
+
+
+test('indented code blocks can be switched off', function () {
+	$markdown = new Markdown;
+	Assert::same("<pre><code>code\n</code></pre>\n", render($markdown, "    code\n"));
+
+	$markdown->allowed[Syntax::CodeIndented] = false;
+	Assert::same("<p>code</p>\n", render($markdown, "    code\n"));
+});
+
+
+test('parse() refuses to run inside itself', function () {
+	$markdown = new Markdown;
+	$markdown->addPass(function () use ($markdown) {
+		$markdown->parse('nested');
+	}, Texy\Stage::Syntax);
+
+	Assert::exception(
+		fn() => $markdown->parse('outer'),
+		LogicException::class,
+		'%A%not reentrant%A%',
+	);
+});
+
+
+test('link reference definitions can be switched off', function () {
+	$markdown = new Markdown;
+	$markdown->allowed[Syntax::LinkDefinition] = false;
+
+	Assert::same("<p>[foo]: /url</p>\n<p>[foo]</p>\n", render($markdown, "[foo]: /url\n\n[foo]"));
+});
+
+
+test('disabled entity syntax leaves references literal', function () {
+	$markdown = new Markdown;
+	$markdown->allowed[Syntax::Entity] = false;
+
+	Assert::same("<p>a &amp;amp; b</p>\n", render($markdown, 'a &amp; b'));
+});
+
+
+test('an instance is reusable', function () {
+	$markdown = new Markdown;
+	$first = render($markdown, "[foo]\n\n[foo]: /a");
+	$second = render($markdown, '[foo]');
+
+	Assert::same("<p><a href=\"/a\">foo</a></p>\n", $first);
+	Assert::same("<p>[foo]</p>\n", $second, 'definitions do not leak between parses');
+});
