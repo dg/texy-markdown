@@ -10,6 +10,7 @@ namespace Texy\Markdown\Modules;
 use Texy;
 use Texy\Markdown\Parsing\HtmlNodes;
 use Texy\Markdown\Parsing\Lines;
+use Texy\Markdown\Parsing\Paragraphs;
 use Texy\Markdown\Parsing\Patterns;
 use Texy\Markdown\Syntax;
 use Texy\Nodes;
@@ -41,7 +42,8 @@ final class HtmlModule extends Texy\Module
 			. '|(?<t4><![A-Za-z])'
 			. '|(?<t5><!\[CDATA\[)'
 			. '|(?<t6></?(?i:' . Patterns::HtmlBlockTags . ')(?=[ \t\n>]|/>|$))'
-			. '|(?<t7>(?:' . Patterns::OpenTag . '|' . Patterns::CloseTag . ')[ \t]*$)'
+			// type 7 must fit on one line, unlike an inline tag
+			. '|(?<t7>(?:' . Patterns::OpenTagSingleLine . '|' . Patterns::CloseTagSingleLine . ')[ \t]*$)'
 			. ')~',
 			$this->parseBlock(...),
 		);
@@ -58,8 +60,13 @@ final class HtmlModule extends Texy\Module
 	 * @param  array{0: string, t1: ?string, t2: ?string, t3: ?string, t4: ?string, t5: ?string, t6: ?string, t7: ?string, ...}  $m
 	 * @param  array{0: int, ...}  $offsets
 	 */
-	private function parseBlock(ParseContext $ctx, array $m, array $offsets): Nodes\BlockNode
+	private function parseBlock(ParseContext $ctx, array $m, array $offsets): ?Nodes\BlockNode
 	{
+		// only type 7 may not interrupt a paragraph; the other six may
+		if (($m['t7'] ?? null) !== null && Paragraphs::precedingAt($ctx, $offsets[0]) !== null) {
+			return null;
+		}
+
 		$parser = $ctx->getBlockParser();
 		$parser->moveBackward();
 

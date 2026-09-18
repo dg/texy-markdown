@@ -13,7 +13,7 @@ namespace Texy\Markdown\Parsing;
  *
  * Several of these are consumed by more than one syntax, and a duplicated copy is
  * exactly how a fix that satisfies one spec example breaks another. In particular
- * BlockStarts has several consumers.
+ * BlockStarts has several consumers and Attr has two deliberately different variants.
  *
  * @internal
  */
@@ -29,12 +29,20 @@ final class Patterns
 	public const AttrName = '[a-zA-Z_:][a-zA-Z0-9_.:-]*';
 	public const AttrValue = '(?:[^ \t\n"\'=<>`]+|\'[^\']*\'|"[^"]*")';
 
+	/** A quoted attribute value may hold a newline, so the single-line variant forbids it explicitly. */
+	public const AttrValueSingleLine = '(?:[^ \t\n"\'=<>`]+|\'[^\'\n]*\'|"[^"\n]*")';
+
 	/** An attribute of an inline tag; may span lines, which raw inline HTML requires. */
 	public const Attr = '(?:[ \t\n]++' . self::AttrName . '(?:[ \t\n]*+=[ \t\n]*+' . self::AttrValue . ')?+)';
 
+	/** An attribute inside an HTML block start condition; a block start must fit on one line. */
+	public const AttrSingleLine = '(?:[ \t]++' . self::AttrName . '(?:[ \t]*+=[ \t]*+' . self::AttrValueSingleLine . ')?+)';
+
 	/** The repetition of attributes is possessive, a tag with thousands of them exhausts the stack of PCRE otherwise. */
 	public const OpenTag = '<' . self::TagName . self::Attr . '*+[ \t\n]*+/?>';
+	public const OpenTagSingleLine = '<' . self::TagName . self::AttrSingleLine . '*+[ \t]*+/?>';
 	public const CloseTag = '</' . self::TagName . '[ \t\n]*>';
+	public const CloseTagSingleLine = '</' . self::TagName . '[ \t]*>';
 
 	/** Any construct of raw HTML that is not a block start: tag, comment, instruction, declaration or CDATA. */
 	public const RawHtml = self::OpenTag . '|' . self::CloseTag . '|<!-->|<!--->|<!--(?:[^-]++|-(?!->))*+-->'
@@ -53,7 +61,7 @@ final class Patterns
 	 * paragraph continuation. Consumers: the block quote and list lazy tests.
 	 *
 	 * Deliberately excludes an indented code block (four spaces continue a paragraph)
-	 * and HTML block type 7.
+	 * and HTML block type 7 (which may not interrupt a paragraph either).
 	 */
 	public const BlockStarts = '[ ]{0,3}(?:'
 		. '\#{1,6}(?:[ \t]|$)'                      // ATX heading

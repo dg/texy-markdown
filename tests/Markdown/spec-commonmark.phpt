@@ -41,5 +41,5 @@ foreach ($cases as $case) {
 
 test('spec score', function () use ($cases, $failures) {
 	$passed = count($cases) - array_sum(array_map('count', $failures));
-	Assert::same(626, $passed);
+	Assert::same(633, $passed);
 });
