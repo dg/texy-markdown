@@ -403,7 +403,11 @@ Foo</code></pre>
 <h2>`Foo</h2>
 
 <p>`</p>
-of dashes"/&gt;
+
+<h2>&lt;a title="a lot</h2>
+
+<p>of dashes"/&gt;</p>
+
 === 92 Setext headings
 <blockquote>
 	<p>Foo</p>
@@ -693,7 +697,8 @@ end</code></pre>
 	<tr>
 		<td>
 			<pre>
-**Hello**, <em>world</em>.</pre>
+**Hello**, <em>world</em>.
+</pre>
 		</td>
 	</tr>
 </table>
@@ -863,8 +868,8 @@ return 1; } else { return 0; } } ]]&gt;
 <div>bar</div>
  *foo*
 === 187 HTML blocks
-<p>Foo</p>
-<a href="bar"> baz </a>
+<p>Foo <a href="bar"> baz</a></p>
+
 === 188 HTML blocks
 <div>
 	<p><em>Emphasized</em> text.</p>
@@ -897,9 +902,7 @@ return 1; } else { return 0; } } ]]&gt;
 <p><a href="my_(url)" title="title (with parens)">Foo*bar]</a></p>
 
 === 195 Link reference definitions
-<p>[Foo bar]:</p>
-&lt;my url&gt; 'title'
-<p>[Foo bar]</p>
+<p><a href="my url" title="title">Foo bar</a></p>
 
 === 196 Link reference definitions
 <p><a href="/url" title="
@@ -2871,7 +2874,9 @@ href="mailto:foo+special&#64;Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a><
 <p>&lt;a /&gt;&lt;b2 data="foo" &gt;</p>
 
 === 616 Raw HTML
-_boolean zoop:33=zoop:33 /&gt;
+<p>&lt;a foo="bar" bam = 'baz &lt;em&gt;"&lt;/em&gt;' _boolean zoop:33=zoop:33
+/&gt;</p>
+
 === 617 Raw HTML
 <p>Foo &lt;responsive-image src="foo.jpg" /&gt;</p>
 
@@ -2958,9 +2963,11 @@ bar</em></p>
 <p><code>code\ span</code></p>
 
 === 642 Hard line breaks
-bar"&gt;
+<a href="foo  
+bar"></a>
 === 643 Hard line breaks
-bar"&gt;
+<a href="foo\
+bar"></a>
 === 644 Hard line breaks
 <p>foo\</p>
 
