@@ -21,6 +21,9 @@ use function strlen;
 /**
  * Raw HTML tags, comments, processing instructions, declarations and CDATA.
  *
+ * Unlike an HTML block start condition, an inline tag may span lines, so this uses
+ * the multi-line Attr variant.
+ *
  * @internal
  */
 final class RawHtml implements SyntaxRegistrar
