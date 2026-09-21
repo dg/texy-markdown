@@ -433,13 +433,9 @@ Foo</code></pre>
 === 96 Setext headings
 <hr>
 
-<p>Foo</p>
+<h2>Foo</h2>
 
-<hr>
-
-<p>Bar</p>
-
-<hr>
+<h2>Bar</h2>
 
 <p>Baz</p>
 
@@ -553,9 +549,7 @@ chunk3</code></pre>
 
 <pre><code>foo</code></pre>
 
-<p>Heading</p>
-
-<hr>
+<h2>Heading</h2>
 
 <pre><code>foo</code></pre>
 
@@ -983,14 +977,12 @@ line2
 </blockquote>
 
 === 215 Link reference definitions
-<h1>[foo]: /url bar</h1>
+<h1>bar</h1>
 
-<p>[foo]</p>
+<p><a href="/url">foo</a></p>
 
 === 216 Link reference definitions
-<h1>[foo]: /url</h1>
-
-<p>[foo]</p>
+<p>=== <a href="/url">foo</a></p>
 
 === 217 Link reference definitions
 <p><a href="/foo-url" title="foo">foo</a>, <a href="/bar-url"

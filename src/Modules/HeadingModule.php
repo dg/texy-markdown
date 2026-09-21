@@ -9,6 +9,7 @@ namespace Texy\Markdown\Modules;
 
 use Texy;
 use Texy\Markdown\Parsing\DeferredNode;
+use Texy\Markdown\Parsing\Patterns;
 use Texy\Markdown\Syntax;
 use Texy\Nodes;
 use Texy\Parsing\ParseContext;
@@ -39,10 +40,11 @@ final class HeadingModule extends Texy\Module
 		// repetition can be possessive: a paragraph of thousands of lines exhausts the stack of
 		// PCRE otherwise. A run no underline follows is skipped whole, as none of its lines
 		// starts a heading either.
+		$excluded = '(?!' . Patterns::SetextExcluded . ')';
 		$notUnderline = '(?![ ]{0,3}(?:=++|-++)[ \t]*+$)';
 		$registry->addBlock(
 			Syntax::HeadingSetext,
-			'~(?:(?<=\n\n)|(?<!.)(?<!\n))([ ]{0,3}\S[^\n]*+\n(?:' . $notUnderline . '[ ]{0,3}\S[^\n]*+\n)*+)'
+			'~^(' . $excluded . '[ ]{0,3}\S[^\n]*+\n(?:' . $excluded . $notUnderline . '[ \t]*+\S[^\n]*+\n)*+)'
 			. '(?:[ ]{0,3}(=++|-++)[ \t]*+$|(*SKIP)(*FAIL))~',
 			$this->parseSetext(...),
 		);
@@ -77,15 +79,11 @@ final class HeadingModule extends Texy\Module
 	 * @param  array{string, string, string}  $m
 	 * @param  array{int, int, int}  $offsets
 	 */
-	private function parseSetext(ParseContext $ctx, array $m, array $offsets): ?Nodes\BlockNode
+	private function parseSetext(ParseContext $ctx, array $m, array $offsets): Nodes\BlockNode
 	{
 		$deferred = null;
 		$offset = $offsets[1];
 		foreach (explode("\n", rtrim($m[1], "\n")) as $line) {
-			if (preg_match('~^[ ]{0,3}(\#{1,6}[ \t]|>|```|\~\~\~|(?:[-*_][ \t]*+){3,}+$)~', $line)) {
-				return null; // what is underlined must be a paragraph, not another block
-			}
-
 			$start = $offset + strspn($line, " \t");
 			if ($deferred === null) {
 				$deferred = new DeferredNode(trim($line), $start);

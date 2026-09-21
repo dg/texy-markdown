@@ -58,7 +58,8 @@ final class Patterns
 
 	/**
 	 * The lines that begin a new block and therefore may not be swallowed as a
-	 * paragraph continuation. Consumers: the block quote and list lazy tests.
+	 * paragraph continuation. Consumers: the setext run and the block quote and list
+	 * lazy tests.
 	 *
 	 * Deliberately excludes an indented code block (four spaces continue a paragraph)
 	 * and HTML block type 7 (which may not interrupt a paragraph either).
@@ -79,6 +80,24 @@ final class Patterns
 	 * possessive, a line of thousands of the characters exhausts the stack of PCRE otherwise.
 	 */
 	public const ThematicBreak = '[ ]{0,3}([-*_])(?:[ \t]*+\1){2,}+[ \t]*$';
+
+	/**
+	 * The opening of a link reference definition, which likewise cannot interrupt a
+	 * paragraph. The label repetition is possessive because this fragment sits inside a
+	 * lookahead evaluated at every line: a backtracking version blows the PCRE limit,
+	 * which surfaces only as an unhelpful "Internal error".
+	 */
+	public const DefinitionStart = '[ ]{0,3}\[(?:[^\[\]\n\\\]|\\\.)*+\]:';
+
+	/**
+	 * Lines the run underlined by a setext heading may not contain.
+	 *
+	 * The setext handler has no refusal path on purpose: BlockParser precomputes its
+	 * matches once and never refreshes them, so refusing a match also destroys every
+	 * match inside the span that was refused. Every condition therefore lives here,
+	 * where the regexp engine can simply find the run that does match.
+	 */
+	public const SetextExcluded = '(?:' . self::BlockStarts . '|' . self::DefinitionStart . ')';
 
 
 	public function __construct()
