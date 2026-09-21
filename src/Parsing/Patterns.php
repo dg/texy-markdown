@@ -77,6 +77,19 @@ final class Patterns
 	 */
 	public const ThematicBreak = '[ ]{0,3}([-*_])(?:[ \t]*+\1){2,}+[ \t]*$';
 
+	/**
+	 * The opening of a link reference definition, which likewise cannot interrupt a
+	 * paragraph. The label repetition is possessive because this fragment sits inside a
+	 * lookahead evaluated at every line: a backtracking version blows the PCRE limit,
+	 * which surfaces only as an unhelpful "Internal error".
+	 */
+	public const DefinitionStart = '[ ]{0,3}\[(?:[^\[\]\n\\\]|\\\.)*+\]:';
+
+	/**
+	 * Lines the run underlined by a setext heading may not contain; the handler cannot refuse a match.
+	 */
+	public const SetextExcluded = '(?:' . self::BlockStarts . '|' . self::DefinitionStart . ')';
+
 
 	public function __construct()
 	{

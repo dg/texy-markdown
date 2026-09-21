@@ -110,6 +110,7 @@ test('a setext heading ends at its first underline', function () {
 	$markdown = new Markdown;
 
 	Assert::same("<h1>Foo</h1>\n\n<p>===</p>\n", $markdown->toHtml("Foo\n===\n==="));
+	Assert::same("<h1>Foo bar</h1>\n\n<h2>baz</h2>\n", $markdown->toHtml("Foo\nbar\n===\nbaz\n---"));
 	Assert::same("<h1>===</h1>\n", $markdown->toHtml("===\n==="));
 });
 
