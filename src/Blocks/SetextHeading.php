@@ -7,6 +7,7 @@
 
 namespace Texy\Markdown\Blocks;
 
+use Texy\Markdown\Internal\Patterns;
 use Texy\Markdown\Internal\SyntaxRegistrar;
 use Texy\Markdown\Nodes\DeferredNode;
 use Texy\Markdown\Registry;
@@ -35,9 +36,10 @@ final class SetextHeading implements SyntaxRegistrar
 
 	public function register(): void
 	{
+		$excluded = '(?!' . Patterns::SetextExcluded . ')';
 		$this->registry->addBlock(
 			Syntax::HeadingSetext,
-			'~(?:(?<=\n\n)|(?<!.)(?<!\n))((?:[ ]{0,3}\S[^\n]*\n)+)[ ]{0,3}(=+|-+)[ \t]*$~',
+			'~^(' . $excluded . '[ ]{0,3}\S[^\n]*\n(?:' . $excluded . '[ \t]*\S[^\n]*\n)*)[ ]{0,3}(=+|-+)[ \t]*$~',
 			$this->parse(...),
 		);
 	}
@@ -47,15 +49,11 @@ final class SetextHeading implements SyntaxRegistrar
 	 * @param  array{string, string, string}  $m
 	 * @param  array{int, int, int}  $offsets
 	 */
-	private function parse(ParseContext $ctx, array $m, array $offsets): ?Nodes\BlockNode
+	private function parse(ParseContext $ctx, array $m, array $offsets): Nodes\BlockNode
 	{
 		$deferred = null;
 		$offset = $offsets[1];
 		foreach (explode("\n", rtrim($m[1], "\n")) as $line) {
-			if (preg_match('~^[ ]{0,3}(\#{1,6}[ \t]|>|```|\~\~\~|(?:[-*_][ \t]*){3,}$)~', $line)) {
-				return null; // what is underlined must be a paragraph, not another block
-			}
-
 			$start = $offset + strspn($line, " \t");
 			if ($deferred === null) {
 				$deferred = new DeferredNode(trim($line), $start);

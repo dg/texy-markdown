@@ -73,6 +73,24 @@ final class Patterns
 		. '|<!--|<\?|<![A-Za-z]|<!\[CDATA\['        // HTML block types 2-5
 		. ')';
 
+	/**
+	 * The opening of a link reference definition, which likewise cannot interrupt a
+	 * paragraph. The label repetition is possessive because this fragment sits inside a
+	 * lookahead evaluated at every line: a backtracking version blows the PCRE limit,
+	 * which surfaces only as an unhelpful "Internal error".
+	 */
+	public const DefinitionStart = '[ ]{0,3}\[(?:[^\[\]\n\\\]|\\\.)*+\]:';
+
+	/**
+	 * Lines the run underlined by a setext heading may not contain.
+	 *
+	 * The setext handler has no refusal path on purpose: BlockParser precomputes its
+	 * matches once and never refreshes them, so refusing a match also destroys every
+	 * match inside the span that was refused. Every condition therefore lives here,
+	 * where the regexp engine can simply find the run that does match.
+	 */
+	public const SetextExcluded = '(?:' . self::BlockStarts . '|' . self::DefinitionStart . ')';
+
 
 	public function __construct()
 	{
