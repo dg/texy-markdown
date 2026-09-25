@@ -38,6 +38,14 @@ test('indented code blocks can be switched off', function () {
 });
 
 
+test('a reserved byte in the input cannot be mistaken for one the parser wrote', function () {
+	$markdown = new Markdown;
+
+	// the lazy-continuation marker must not reach a block pattern
+	Assert::contains('&#xFFFD;', str_replace("\u{FFFD}", '&#xFFFD;', render($markdown, "\x1Atext\n")));
+});
+
+
 test('parse() refuses to run inside itself', function () {
 	$markdown = new Markdown;
 	$markdown->addPass(function () use ($markdown) {

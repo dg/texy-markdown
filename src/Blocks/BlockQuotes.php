@@ -8,6 +8,7 @@
 namespace Texy\Markdown\Blocks;
 
 use Texy\Markdown\Internal\Lines;
+use Texy\Markdown\Internal\LineState;
 use Texy\Markdown\Internal\Patterns;
 use Texy\Markdown\Internal\SyntaxRegistrar;
 use Texy\Markdown\Registry;
@@ -47,17 +48,18 @@ final class BlockQuotes implements SyntaxRegistrar
 		$parser = $ctx->getBlockParser();
 		$parser->moveBackward();
 		$lines = [];
-		$inParagraph = false;
+		$state = new LineState;
 		$end = $offsets[0];
 
 		while (($line = Lines::next($parser, $lineOffset)) !== null) {
 			if (preg_match('~^[ ]{0,3}>[ ]?~', $line, $marker)) {
 				$content = substr($line, strlen($marker[0]));
 				$offset = $lineOffset + strlen($marker[0]);
-				$inParagraph = trim($content) !== '';
-			} elseif ($inParagraph && trim($line) !== '' && !Patterns::startsBlock($line)) {
-				$content = $line; // lazy continuation
-				$offset = $lineOffset;
+				$state->feed($content);
+			} elseif ($state->inParagraph() && trim($line) !== '' && !Patterns::startsBlock($line)) {
+				// lazy continuation; the marker stands on the newline before the line
+				$content = Patterns::LazyMarker . $line;
+				$offset = $lineOffset - 1;
 			} else {
 				$parser->moveBackward();
 				break;

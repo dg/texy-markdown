@@ -9,6 +9,7 @@ namespace Texy\Markdown\Blocks;
 
 use Texy\Markdown\Internal\Indentation;
 use Texy\Markdown\Internal\Lines;
+use Texy\Markdown\Internal\LineState;
 use Texy\Markdown\Internal\Paragraphs;
 use Texy\Markdown\Internal\Patterns;
 use Texy\Markdown\Internal\SyntaxRegistrar;
@@ -79,6 +80,7 @@ final class Lists implements SyntaxRegistrar
 		$contentIndent = 0;
 		$blanks = 0;
 		$loose = false;
+		$state = new LineState;
 		$end = $offsets[0];
 
 		while (($l = Lines::next($parser, $lineOffset)) !== null) {
@@ -90,6 +92,7 @@ final class Lists implements SyntaxRegistrar
 
 				$blanks++;
 				$current[] = ['content' => '', 'offset' => $lineOffset + strlen($l)];
+				$state->feed('');
 				continue;
 			}
 
@@ -119,6 +122,8 @@ final class Lists implements SyntaxRegistrar
 				// spaces standing in for a tab or added for a code block make the content longer than its source
 				$current = [['content' => $rest, 'offset' => max($lineOffset + $width, $lineOffset + strlen($l) - strlen($rest))]];
 				$starts[] = $lineOffset + strlen($marker[1]);
+				$state = new LineState;
+				$state->feed($rest);
 				$end = $lineOffset + strlen($l);
 				continue;
 			}
@@ -131,13 +136,15 @@ final class Lists implements SyntaxRegistrar
 			if (Indentation::width($l) >= $contentIndent) {
 				$content = Indentation::strip($l, $contentIndent);
 				$current[] = ['content' => $content, 'offset' => max($lineOffset, $lineOffset + strlen($l) - strlen($content))];
+				$state->feed($content);
 				$blanks = 0;
 				$end = $lineOffset + strlen($l);
 				continue;
 			}
 
-			if ($blanks === 0 && !Patterns::startsBlock($l) && trim(end($current)['content']) !== '') {
-				$content = ltrim($l); // lazy continuation
+			if ($blanks === 0 && !Patterns::startsBlock($l) && $state->inParagraph()) {
+				// lazy continuation; the marker stands right before the content
+				$content = Patterns::LazyMarker . ltrim($l);
 				$current[] = ['content' => $content, 'offset' => $lineOffset + strlen($l) - strlen($content)];
 				$end = $lineOffset + strlen($l);
 				continue;

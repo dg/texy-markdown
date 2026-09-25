@@ -9,6 +9,7 @@ namespace Texy\Markdown\Blocks;
 
 use Texy\Markdown\Internal\Indentation;
 use Texy\Markdown\Internal\Paragraphs;
+use Texy\Markdown\Internal\Patterns;
 use Texy\Markdown\Internal\SyntaxRegistrar;
 use Texy\Markdown\Nodes\DeferredNode;
 use Texy\Markdown\ParseState;
@@ -87,6 +88,9 @@ final class GapParser implements SyntaxRegistrar
 			$line = $eol === false ? substr($text, $pos) : substr($text, $pos, $eol - $pos);
 			$lineOffset = $offset + $pos;
 			$lineEnd = $lineOffset + strlen($line);
+			// a container marked this line as its paragraph's lazy continuation; the
+			// marker has done its job of keeping block patterns off it
+			$line = ltrim($line, Patterns::LazyMarker);
 			$blank = trim($line) === '';
 
 			if ($state === self::StateCode) {

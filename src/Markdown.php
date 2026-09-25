@@ -195,11 +195,16 @@ final class Markdown
 	 * Input normalization. Deliberately not Texy::normalize(): that one right-trims
 	 * lines, and two trailing spaces are a hard line break here.
 	 *
-	 * NUL becomes U+FFFD as the spec requires.
+	 * NUL becomes U+FFFD as the spec requires, and so does the lazy continuation marker,
+	 * so that one arriving from the input cannot be mistaken for one the parser wrote.
 	 */
 	public static function normalize(string $text): string
 	{
-		return str_replace(["\r\n", "\r", "\0"], ["\n", "\n", "\u{FFFD}"], $text);
+		return str_replace(
+			["\r\n", "\r", "\0", Internal\Patterns::LazyMarker],
+			["\n", "\n", "\u{FFFD}", "\u{FFFD}"],
+			$text,
+		);
 	}
 
 

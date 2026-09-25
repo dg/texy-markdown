@@ -39,7 +39,9 @@ final class SetextHeading implements SyntaxRegistrar
 		$excluded = '(?!' . Patterns::SetextExcluded . ')';
 		$this->registry->addBlock(
 			Syntax::HeadingSetext,
-			'~^(' . $excluded . '[ ]{0,3}\S[^\n]*\n(?:' . $excluded . '[ \t]*\S[^\n]*\n)*)[ ]{0,3}(=+|-+)[ \t]*$~',
+			// a lazily continued line may be part of the run, but never the underline
+			'~^(' . $excluded . '[ ]{0,3}\S[^\n]*\n(?:' . $excluded . '[ \t]*\S[^\n]*\n)*)'
+			. '(?!' . Patterns::LazyMarker . ')[ ]{0,3}(=+|-+)[ \t]*$~',
 			$this->parse(...),
 		);
 	}
