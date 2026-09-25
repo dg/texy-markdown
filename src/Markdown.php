@@ -222,8 +222,10 @@ final class Markdown
 	 * Input normalization. Deliberately not Texy::normalize(): that one right-trims
 	 * lines, and two trailing spaces are a hard line break here.
 	 *
-	 * NUL becomes U+FFFD as the spec requires. Other control characters are removed as in Texy;
-	 * tab, newline and form feed stay, the spec reads them as whitespace.
+	 * NUL becomes U+FFFD as the spec requires. Other control characters are removed as in Texy,
+	 * the lazy continuation marker with them, so that one arriving from the input cannot be
+	 * mistaken for one the parser wrote; tab, newline and form feed stay, the spec reads them
+	 * as whitespace.
 	 * @throws Texy\InvalidInputException  when the text is not valid UTF-8
 	 */
 	public static function normalize(string $text): string

@@ -11,6 +11,7 @@ use Texy;
 use Texy\Markdown\Parsing\DeferredNode;
 use Texy\Markdown\Parsing\Indentation;
 use Texy\Markdown\Parsing\Paragraphs;
+use Texy\Markdown\Parsing\Patterns;
 use Texy\Markdown\Syntax;
 use Texy\Nodes;
 use Texy\Parsing\OffsetMap;
@@ -80,6 +81,9 @@ final class ParagraphModule extends Texy\Module
 			$line = $eol === false ? substr($text, $pos) : substr($text, $pos, $eol - $pos);
 			$lineOffset = $offset + $pos;
 			$lineEnd = $lineOffset + strlen($line);
+			// a container marked this line as its paragraph's lazy continuation; the
+			// marker has done its job of keeping block patterns off it
+			$line = ltrim($line, Patterns::LazyMarker);
 			$blank = trim($line) === '';
 
 			if ($state === self::StateCode) {

@@ -57,9 +57,18 @@ final class Patterns
 	public const Escapable = '[!"\#$%&\'()*+,\-./:;<=>?@\[\\\\\]^_`{|}\~]';
 
 	/**
+	 * Marks a line a container accepted as a lazy continuation.
+	 *
+	 * Such a line continues a paragraph and may not be reinterpreted as the start of
+	 * anything, so it gets a byte no block pattern can match: every one of them opens
+	 * with `[ ]{0,3}` and this is not a space. The gap handler strips the marker again.
+	 */
+	public const LazyMarker = "\x1A";
+
+	/**
 	 * The lines that begin a new block and therefore may not be swallowed as a
-	 * paragraph continuation. Consumers: the setext run and the block quote and list
-	 * lazy tests.
+	 * paragraph continuation. Consumers: the setext run, the block quote and list lazy
+	 * tests, and LineState.
 	 *
 	 * Deliberately excludes an indented code block (four spaces continue a paragraph)
 	 * and HTML block type 7 (which may not interrupt a paragraph either).
