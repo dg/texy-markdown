@@ -57,6 +57,11 @@ final class Patterns
 	public const Escapable = '[!"\#$%&\'()*+,\-./:;<=>?@\[\\\\\]^_`{|}\~]';
 
 	/**
+	 * Marks a line a container accepted as a lazy continuation, so that no block pattern matches it.
+	 */
+	public const LazyMarker = "\x1A";
+
+	/**
 	 * The lines that begin a new block and therefore may not be swallowed as a paragraph
 	 * continuation; an indented code block and HTML block type 7 do not.
 	 */

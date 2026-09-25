@@ -155,7 +155,7 @@ final class Markdown
 	/**
 	 * Input normalization. Unlike Texy::normalize() it does not right-trim lines, as two trailing
 	 * spaces are a hard break. NUL becomes U+FFFD, other control characters except tab, newline
-	 * and form feed are removed.
+	 * and form feed are removed, the lazy continuation marker with them.
 	 * @throws Texy\InvalidInputException  when the text is not valid UTF-8
 	 */
 	public static function normalize(string $text): string

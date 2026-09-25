@@ -36,6 +36,14 @@ test('indented code blocks can be switched off', function () {
 });
 
 
+test('a reserved byte in the input cannot be mistaken for one the parser wrote', function () {
+	$markdown = new Markdown;
+
+	// the lazy-continuation marker must not reach a block pattern
+	Assert::same("<p>text</p>\n", render($markdown, "\x1Atext\n"));
+});
+
+
 test('control characters are removed as in Texy, NUL is replaced, a form feed is whitespace', function () {
 	Assert::same("abc\u{FFFD}\tde\ff\n", Markdown::normalize("a\x01b\x15c\0\td\ve\ff\r\n"));
 	Assert::notContains('<em>', (new Markdown)->toHtml("*\ffoo*"));

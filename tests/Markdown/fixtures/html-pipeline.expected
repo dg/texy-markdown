@@ -417,7 +417,7 @@ Foo</code></pre>
 
 === 93 Setext headings
 <blockquote>
-	<h1>foo bar</h1>
+	<p>foo bar ===</p>
 </blockquote>
 
 === 94 Setext headings
@@ -1089,14 +1089,17 @@ bbb</p>
 
 === 236 Block quotes
 <blockquote>
-	<pre><code>foo
-bar</code></pre>
+	<pre><code>foo</code></pre>
 </blockquote>
+
+<pre><code>bar</code></pre>
 
 === 237 Block quotes
 <blockquote>
-	<pre><code>foo</code></pre>
+	<pre><code></code></pre>
 </blockquote>
+
+<p>foo</p>
 
 <pre><code></code></pre>
 
@@ -1780,11 +1783,7 @@ baz</code></pre>
 
 	<li>c</li>
 
-	<li>d
-		<ul>
-			<li>e</li>
-		</ul>
-	</li>
+	<li>d - e</li>
 </ul>
 
 === 313 Lists
