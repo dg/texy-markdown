@@ -82,6 +82,7 @@ final class Lists implements SyntaxRegistrar
 		$loose = false;
 		$state = new LineState;
 		$end = $offsets[0];
+		$startedBlank = false;
 
 		while (($l = Lines::next($parser, $lineOffset)) !== null) {
 			if (trim($l) === '') {
@@ -91,9 +92,24 @@ final class Lists implements SyntaxRegistrar
 				}
 
 				$blanks++;
-				$current[] = ['content' => '', 'offset' => $lineOffset + strlen($l)];
 				$state->feed('');
+				// an item may begin with at most one blank line; a further one ends it,
+				// though a marker after it still continues the list
+				if (trim(implode('', array_column($current, 'content'))) === '') {
+					$startedBlank = true;
+				} else {
+					$current[] = ['content' => '', 'offset' => $lineOffset + strlen($l)];
+				}
+
 				continue;
+			}
+
+			// `* * *` is a thematic break, not an item holding an item
+			if (($current === null || Indentation::width($l) < $contentIndent)
+				&& preg_match('~^[ ]{0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$~', $l)
+			) {
+				$parser->moveBackward();
+				break;
 			}
 
 			if (preg_match('~^([ ]{0,3})([-+*]|\d{1,9}[.)])([ \t]+|$)~', $l, $marker)
@@ -111,8 +127,9 @@ final class Lists implements SyntaxRegistrar
 				$width = strlen($marker[1]) + strlen($marker[2]);
 				$spaces = strlen($marker[3]);
 
-				// more than four spaces after the marker mean an indented code block
-				$contentIndent = $spaces > Indentation::TabStop || ($spaces === 0 && trim($rest) === '')
+				// more than four spaces after the marker mean an indented code block,
+				// and a marker with nothing after it owns exactly one column of content
+				$contentIndent = $spaces > Indentation::TabStop || trim($rest) === ''
 					? $width + 1
 					: $width + $spaces;
 				if ($spaces > Indentation::TabStop) {
@@ -124,6 +141,7 @@ final class Lists implements SyntaxRegistrar
 				$starts[] = $lineOffset + strlen($marker[1]);
 				$state = new LineState;
 				$state->feed($rest);
+				$startedBlank = false;
 				$end = $lineOffset + strlen($l);
 				continue;
 			}
@@ -134,6 +152,11 @@ final class Lists implements SyntaxRegistrar
 			}
 
 			if (Indentation::width($l) >= $contentIndent) {
+				if ($startedBlank) {
+					$parser->moveBackward();
+					break;
+				}
+
 				$content = Indentation::strip($l, $contentIndent);
 				$current[] = ['content' => $content, 'offset' => max($lineOffset, $lineOffset + strlen($l) - strlen($content))];
 				$state->feed($content);
@@ -166,10 +189,8 @@ final class Lists implements SyntaxRegistrar
 		$itemNodes = [];
 		foreach ($items as $i => $lines) {
 			$text = rtrim(implode("\n", array_column($lines, 'content')), "\n");
-			// a blank line makes the list loose only between the item's own blocks
-			$stripped = preg_replace('~^([ ]{0,3})(`{3,}|\~{3,})[^\n]*\n(.*?\n)??\1?\2[ \t]*(?=\n|$)~ms', '', $text);
-			$loose = $loose || (bool) preg_match('~\n[ \t]*\n(?![ \t])(?!$)~', $stripped);
 			$content = $ctx->parseBlock($text);
+			$loose = $loose || self::isLoose($text, $content);
 			OffsetMap::fromLines($lines)->applyTo($content);
 			$itemNodes[] = new Nodes\ListItemNode(
 				$content,
@@ -185,6 +206,34 @@ final class Lists implements SyntaxRegistrar
 		$list->tight = !$loose;
 		$list->range = new Range($offsets[0], $end - $offsets[0]);
 		return $list;
+	}
+
+
+	/**
+	 * Is any pair of the item's own blocks separated by a blank line?
+	 *
+	 * Asking the item's text directly cannot answer that: a blank line deep inside a
+	 * nested list or a fenced block belongs to that construct, not to this item. The
+	 * parsed blocks and their ranges say exactly which blank lines are the item's own.
+	 */
+	private static function isLoose(string $text, Nodes\ContentNode $content): bool
+	{
+		$previousEnd = null;
+		foreach ($content->children as $child) {
+			if ($child->range === null) {
+				continue;
+			}
+
+			if ($previousEnd !== null
+				&& preg_match('~\n[ \t]*\n~', substr($text, $previousEnd, $child->range->offset - $previousEnd))
+			) {
+				return true;
+			}
+
+			$previousEnd = $child->range->offset + $child->range->length;
+		}
+
+		return false;
 	}
 
 
