@@ -19,7 +19,9 @@
 
 === 5 Tabs
 <ul>
-	<li>foo
+	<li>
+		<p>foo</p>
+
 		<pre><code>bar</code></pre>
 	</li>
 </ul>
@@ -236,17 +238,11 @@ bar</p>
 === 60 Thematic breaks
 <ul>
 	<li>Foo</li>
+</ul>
 
-	<li>
-		<ul>
-			<li>
-				<ul>
-					<li></li>
-				</ul>
-			</li>
-		</ul>
-	</li>
+<hr>
 
+<ul>
 	<li>Bar</li>
 </ul>
 
@@ -1346,14 +1342,18 @@ baz</code></pre>
 
 === 270 List items
 <ul>
-	<li>foo
+	<li>
+		<p>foo</p>
+
 		<pre><code>bar</code></pre>
 	</li>
 </ul>
 
 === 271 List items
 <ol start="10">
-	<li>foo
+	<li>
+		<p>foo</p>
+
 		<pre><code>bar</code></pre>
 	</li>
 </ol>
@@ -1423,17 +1423,15 @@ baz</code></pre>
 
 === 279 List items
 <ul>
+	<li>foo</li>
+</ul>
+
+=== 280 List items
+<ul>
 	<li></li>
 </ul>
 
 <p>foo</p>
-
-=== 280 List items
-<ul>
-	<li>
-		<p>foo</p>
-	</li>
-</ul>
 
 === 281 List items
 <ul>
@@ -1696,13 +1694,9 @@ baz</code></pre>
 
 === 307 Lists
 <ul>
-	<li>
-		<p>foo</p>
-
+	<li>foo
 		<ul>
-			<li>
-				<p>bar</p>
-
+			<li>bar
 				<ul>
 					<li>
 						<p>baz</p>
