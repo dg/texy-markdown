@@ -44,7 +44,8 @@ final class Links implements SyntaxRegistrar
 
 	public function register(): void
 	{
-		$dest = '(?:<(?:[^<>\n\\\]|\\\.)*>|(?:[^ \t\n()\\\[:cntrl:]]|\\\.|' . Patterns::Paren . ')*)';
+		// a destination written without pointy brackets may not begin with one either
+		$dest = '(?:<(?:[^<>\n\\\]|\\\.)*>|(?!<)(?:[^ \t\n()\\\[:cntrl:]]|\\\.|' . Patterns::Paren . ')*)';
 		$tail = '(?:\((?<inl>[ \t\n]*(?<dest>' . $dest . ')(?:[ \t\n]+(?<ttl>' . Patterns::LinkTitle . '))?[ \t\n]*)\)'
 			. '|(?<ref>\[(?:[^\[\]\\\]|\\\.)*\])?)';
 

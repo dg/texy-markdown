@@ -7,8 +7,6 @@
 
 namespace Texy\Markdown\Internal;
 
-use function strlen;
-
 
 /**
  * Indentation arithmetic in columns.
@@ -31,39 +29,34 @@ final class Indentation
 
 
 	/**
-	 * Width of the line's leading whitespace in columns.
+	 * Width of the line's leading whitespace in columns, counted from $startColumn.
 	 */
-	public static function width(string $line): int
+	public static function width(string $line, int $startColumn = 0): int
 	{
-		$column = 0;
+		$column = $startColumn;
 		for ($i = 0; $i < strspn($line, " \t"); $i++) {
 			$column += $line[$i] === "\t" ? self::TabStop - $column % self::TabStop : 1;
 		}
 
-		return $column;
+		return $column - $startColumn;
 	}
 
 
 	/**
-	 * Removes $columns columns of indentation. A tab straddling the boundary leaves
-	 * the columns it covers behind as spaces.
+	 * Removes $columns columns of indentation.
+	 *
+	 * What is left of the indentation comes back as spaces rather than as the original
+	 * bytes: a tab's width depends on the column it sits at, so a tab that survives the
+	 * strip would be re-measured against the wrong column afterwards and silently lose
+	 * width.
 	 */
 	public static function strip(string $line, int $columns): string
 	{
-		$i = 0;
-		$column = 0;
-		while ($i < strlen($line) && $column < $columns) {
-			if ($line[$i] === ' ') {
-				$column++;
-			} elseif ($line[$i] === "\t") {
-				$column += self::TabStop - $column % self::TabStop;
-			} else {
-				break;
-			}
-
-			$i++;
+		if ($columns <= 0) {
+			return $line;
 		}
 
-		return str_repeat(' ', max(0, $column - $columns)) . substr($line, $i);
+		$width = self::width($line);
+		return str_repeat(' ', max(0, $width - $columns)) . substr($line, strspn($line, " \t"));
 	}
 }

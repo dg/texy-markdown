@@ -5,7 +5,7 @@
  *
  * All results are computed before anything is asserted: test() offers no isolation,
  * so an assertion that fails mid-loop would stop the remaining examples from ever
- * being measured. The suite is asserted as a single score until every example passes.
+ * being measured. One assertion per section keeps the report readable.
  */
 
 use Tester\Assert;
@@ -40,7 +40,8 @@ foreach ($cases as $case) {
 	}
 }
 
-test('spec score', function () use ($cases, $failures) {
-	$passed = count($cases) - array_sum(array_map('count', $failures));
-	Assert::same(647, $passed);
-});
+foreach (array_unique(array_column($cases, 'section')) as $section) {
+	test($section, function () use ($failures, $section) {
+		Assert::same([], $failures[$section] ?? []);
+	});
+}

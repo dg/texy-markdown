@@ -7,6 +7,7 @@
 
 namespace Texy\Markdown\Blocks;
 
+use Texy\Markdown\Internal\Indentation;
 use Texy\Markdown\Internal\Lines;
 use Texy\Markdown\Internal\LineState;
 use Texy\Markdown\Internal\Patterns;
@@ -52,9 +53,10 @@ final class BlockQuotes implements SyntaxRegistrar
 		$end = $offsets[0];
 
 		while (($line = Lines::next($parser, $lineOffset)) !== null) {
-			if (preg_match('~^[ ]{0,3}>[ ]?~', $line, $marker)) {
-				$content = substr($line, strlen($marker[0]));
-				$offset = $lineOffset + strlen($marker[0]);
+			if (preg_match('~^[ ]{0,3}>~', $line, $marker)) {
+				$content = self::stripMarker($line, strlen($marker[0]));
+				// a tab partly expanded to spaces makes the content longer than its source
+				$offset = max($lineOffset + strlen($marker[0]), $lineOffset + strlen($line) - strlen($content));
 				$state->feed($content);
 			} elseif ($state->inParagraph() && trim($line) !== '' && !Patterns::startsBlock($line)) {
 				// lazy continuation; the marker stands on the newline before the line
@@ -72,5 +74,22 @@ final class BlockQuotes implements SyntaxRegistrar
 		$content = $ctx->parseBlock(implode("\n", array_column($lines, 'content')));
 		OffsetMap::fromLines($lines)->applyTo($content);
 		return new Nodes\BlockQuoteNode($content, null, new Range($offsets[0], $end - $offsets[0]));
+	}
+
+
+	/**
+	 * Drops the `>` and the one space that may follow it.
+	 *
+	 * When that space is part of a tab, only one column of the tab belongs to the
+	 * marker; the rest is content and has to survive as spaces, because its width
+	 * depends on a column the content alone no longer knows about.
+	 */
+	private static function stripMarker(string $line, int $markerLength): string
+	{
+		$rest = substr($line, $markerLength);
+		$spaces = strspn($rest, " \t");
+		return $spaces === 0
+			? $rest
+			: str_repeat(' ', Indentation::width($rest, $markerLength) - 1) . substr($rest, $spaces);
 	}
 }

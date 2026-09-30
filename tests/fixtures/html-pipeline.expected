@@ -25,20 +25,23 @@
 	<li>
 		<p>foo</p>
 
-		<pre><code>bar
+		<pre><code>  bar
 </code></pre>
 	</li>
 </ul>
 
 === 6 Tabs
 <blockquote>
-	<pre><code>	foo
+	<pre><code>  foo
 </code></pre>
 </blockquote>
 
 === 7 Tabs
 <ul>
-	<li>foo</li>
+	<li>
+		<pre><code>  foo
+</code></pre>
+	</li>
 </ul>
 
 === 8 Tabs
@@ -2560,11 +2563,10 @@ bar>)</foo>
 <p><a href="b)c">a</a></p>
 
 === 493 Links
-<p><a href="foo\">link</a></p>
+<p>[link](&lt;foo&gt;)</p>
 
 === 494 Links
-<p><a href="&lt;b">a</a>c <a href="&lt;b">a</a>c&gt; <a
-href="&lt;b&gt;c">a</a></p>
+<p>[a](&lt;b)c [a](&lt;b)c&gt; [a](<b>c)</b></p>
 
 === 495 Links
 <p><a href="(foo)">link</a></p>
