@@ -42,7 +42,8 @@ final class LinkModule extends Texy\Module
 
 	public function register(Registry $registry): void
 	{
-		$dest = '(?:<(?:[^<>\n\\\]++|\\\.)*+>|(?:[^ \t\n()\\\[:cntrl:]]++|\\\.|' . Patterns::buildNested('\(', '\)') . ')*+)';
+		// a destination written without pointy brackets may not begin with one either
+		$dest = '(?:<(?:[^<>\n\\\]++|\\\.)*+>|(?!<)(?:[^ \t\n()\\\[:cntrl:]]++|\\\.|' . Patterns::buildNested('\(', '\)') . ')*+)';
 		$tail = '(?:\((?<inl>[ \t\n]*(?<dest>' . $dest . ')(?:[ \t\n]+(?<ttl>' . Patterns::LinkTitle . '))?[ \t\n]*)\)'
 			. '|(?<ref>\[(?:[^\[\]\\\]++|\\\.)*+\])?)';
 		$text = '(?<brk>' . Patterns::buildNested('\[', '\]') . ')';
