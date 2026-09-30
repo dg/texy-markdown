@@ -118,7 +118,8 @@ final class ListModule extends Texy\Module
 				$blanks = 0;
 				$rest = substr($l, strlen($marker[0]));
 				$width = strlen($marker[1]) + strlen($marker[2]);
-				$spaces = strlen($marker[3]);
+				// the whitespace after the marker counts in columns, not bytes
+				$spaces = Indentation::width($marker[3], $width);
 
 				// more than four spaces after the marker mean an indented code block,
 				// and a marker with nothing after it owns exactly one column of content
