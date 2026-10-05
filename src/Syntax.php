@@ -79,4 +79,21 @@ final class Syntax
 
 	/** HTML entity reference (`&amp;`, `&#35;`) */
 	public const Entity = 'entity';
+
+	// GFM extensions
+
+	/** GFM table (`| a | b |`) */
+	public const Table = 'table';
+
+	/** GFM task list item (`- [ ]`, `- [x]`) */
+	public const TaskList = 'list/task';
+
+	/** GFM strikethrough (`~~text~~`) */
+	public const Strikethrough = 'phrase/del';
+
+	/** GFM extended autolink (`www.`, bare `http://`, bare e-mail) */
+	public const AutolinkExtended = 'link/auto-extended';
+
+	/** GFM disallowed raw HTML filter */
+	public const TagFilter = 'html/tagfilter';
 }

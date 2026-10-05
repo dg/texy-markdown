@@ -8,7 +8,8 @@ use Tester\Assert;
 use Texy\{InvalidArgumentException, InvalidInputException};
 use Texy\Markdown\Markdown;
 use Texy\Markdown\Syntax;
-use Texy\Nodes\{CodeBlockNode, DocumentNode, PhraseNode, TextNode};
+use Texy\Nodes\{CodeBlockNode, DocumentNode, ListItemNode, PhraseNode, TextNode};
+use Texy\Output\Text\Renderer as TextRenderer;
 use Texy\Parsing\ParseContext;
 use Texy\{Stage, Texy};
 
@@ -76,6 +77,7 @@ test('passes of a document run in Markdown as in Texy, typography exactly once',
 test('the map of syntaxes is complete and checked', function () {
 	$markdown = new Markdown;
 	Assert::true($markdown->allowedSyntax[Syntax::CodeIndented]);
+	Assert::false($markdown->allowedSyntax[Syntax::Table]);
 
 	$markdown->allowedSyntax['imag'] = false;
 	Assert::exception(fn() => $markdown->parse('a'), InvalidArgumentException::class, "Unknown syntax 'imag', did you mean 'image'?");
@@ -120,4 +122,15 @@ test('a reference defined after its use is resolved, an unknown one stays text',
 	$html = (new Markdown)->toHtml("[a][b][c]\n\n[b]: /b\n[c]: /c");
 	Assert::contains('<a href="/b">a</a>', $html);
 	Assert::contains('[c]', str_replace('<a href="/c">c</a>', '[c]', $html));
+});
+
+
+test('a task keeps its state on the way through the outputs', function () {
+	$markdown = Markdown::gfm();
+	$document = $markdown->parse("- [x] a\n- [ ] b\n");
+	$items = $document->find(ListItemNode::class);
+	Assert::true($items[0]->checked);
+	Assert::false($items[1]->checked);
+
+	Assert::same("[x] a\n[ ] b\n", (new TextRenderer)->render($document));
 });

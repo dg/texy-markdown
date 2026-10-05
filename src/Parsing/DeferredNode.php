@@ -42,6 +42,17 @@ class DeferredNode extends InlineNode
 	}
 
 
+	/** Text that differs from its source also inside a line, so the map has more entries than line starts. */
+	public static function fromMap(string $text, OffsetMap $map): self
+	{
+		$start = $map->toAbsolute(0);
+		$node = new self($text, $start);
+		$node->map = $map;
+		$node->range = new Range($start, $map->toAbsolute(strlen($text)) - $start);
+		return $node;
+	}
+
+
 	/** The content slot of a block node is a ContentNode, so wrap the deferred text in one. */
 	public static function wrap(string $text, int $offset): ContentNode
 	{

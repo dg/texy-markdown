@@ -82,12 +82,17 @@ final class Markdown
 			$this->engine->declare($name);
 		}
 
+		foreach (self::gfmSyntaxes() as $name) {
+			$this->engine->declare($name, enabled: false);
+		}
+
 		foreach ($this->createModules() as $module) {
 			$module->register($this->engine);
 		}
 
 		$this->allowedSyntax = $this->engine->completeAllowed([]);
 		$this->engine->addPass($this->finishGrammar(...), Stage::Syntax);
+		$this->engine->addPass($this->filterTags(...));
 		DocumentPasses::register($this->engine, $this->config, $this->htmlPolicy);
 	}
 
@@ -98,6 +103,26 @@ final class Markdown
 		$config->locale = 'en';
 		$config->hyphenation = false;
 		return $config;
+	}
+
+
+	/**
+	 * CommonMark plus the five GitHub Flavored Markdown extensions. Each of them can be
+	 * switched off again through $allowedSyntax.
+	 */
+	public static function gfm(
+		?Config $config = null,
+		?HtmlConfig $htmlOutput = null,
+		?HtmlPolicy $htmlPolicy = null,
+		?UrlPolicy $urlPolicy = null,
+	): self
+	{
+		$markdown = new self($config, $htmlOutput, $htmlPolicy, $urlPolicy);
+		foreach (self::gfmSyntaxes() as $name) {
+			$markdown->allowedSyntax[$name] = true;
+		}
+
+		return $markdown;
 	}
 
 
@@ -156,8 +181,9 @@ final class Markdown
 
 
 	/**
-	 * Turns the syntax tree into the document, in place: applies the HTML policy, heading
-	 * shift, the consumer's passes and typography. A second call for one document throws.
+	 * Turns the syntax tree into the document, in place: filters the raw HTML GFM
+	 * disallows, applies the HTML policy, heading shift, the consumer's passes and typography.
+	 * A second call for one document throws.
 	 */
 	public function transform(Nodes\DocumentNode $document): Nodes\DocumentNode
 	{
@@ -243,7 +269,7 @@ final class Markdown
 	 * The order is the collision-resolution order: when two patterns match at the same
 	 * offset with the same length, the one registered first wins. Headings must therefore
 	 * come after lists and thematic breaks (`- Foo` / `---` is a list plus a break, not a
-	 * heading), and links after images.
+	 * heading), and links after images. GFM syntaxes are always registered and off by default.
 	 * @return list<Texy\Module>
 	 */
 	private function createModules(): array
@@ -262,6 +288,7 @@ final class Markdown
 			new Modules\LinkModule($this->state),
 			new Modules\EmphasisModule,
 			new Modules\EntityModule,
+			new Modules\TableModule,
 		];
 	}
 
@@ -269,9 +296,16 @@ final class Markdown
 	private function finishGrammar(Nodes\DocumentNode $document): void
 	{
 		new Passes\LinkDefinitionPass($this->state, !empty($this->allowedSyntax[Syntax::LinkDefinition]))->process($document);
+		new Passes\TaskListPass(!empty($this->allowedSyntax[Syntax::TaskList]))->process($document);
 		new Passes\InlineParsePass($this->engine->createParseContext($this->allowedSyntax), $this->state)->process($document);
 		(new Passes\EmphasisPass)->process($document);
 		(new Passes\ImagePass)->process($document);
+	}
+
+
+	private function filterTags(Nodes\DocumentNode $document): void
+	{
+		new Passes\TagFilterPass(!empty($this->allowedSyntax[Syntax::TagFilter]))->process($document);
 	}
 
 
@@ -286,6 +320,16 @@ final class Markdown
 			Syntax::HtmlInline, Syntax::Escape, Syntax::EscapedBreak,
 			Syntax::HardBreak, Syntax::SoftBreak, Syntax::Image, Syntax::Link,
 			Syntax::Delimiter, Syntax::Entity,
+		];
+	}
+
+
+	/** @return list<string> */
+	private static function gfmSyntaxes(): array
+	{
+		return [
+			Syntax::Table, Syntax::TaskList, Syntax::Strikethrough,
+			Syntax::AutolinkExtended, Syntax::TagFilter,
 		];
 	}
 }

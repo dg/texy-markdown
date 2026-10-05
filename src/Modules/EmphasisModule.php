@@ -23,6 +23,12 @@ use function strlen;
  * The neighbouring characters are captured through a lookbehind rather than consumed,
  * because a character between two runs is context for both of them.
  *
+ * GFM strikethrough: `~~text~~`, and a single tilde as well.
+ *
+ * A third delimiter character fed into the same machinery as `*` and `_`; only the
+ * pairing rule differs, see EmphasisPass. Three or more tildes are a fenced code
+ * block, which is a block construct and never reaches here.
+ *
  * @internal
  */
 final class EmphasisModule extends Texy\Module
@@ -33,6 +39,12 @@ final class EmphasisModule extends Texy\Module
 			Syntax::Delimiter,
 			'~(?:(?<=(.))|(?<!.))(\*+|_+)(?=(.)|$)~s',
 			$this->parseDelimiter(...),
+		);
+
+		$registry->addInline(
+			Syntax::Strikethrough,
+			'~(?:(?<=(.))|(?<!.))(\~{1,2})(?!\~)(?=(.)|$)~s',
+			$this->parseStrikethrough(...),
 		);
 	}
 
@@ -49,5 +61,15 @@ final class EmphasisModule extends Texy\Module
 			$m[3] ?? '',
 			new Range($offsets[2], strlen($m[2])),
 		);
+	}
+
+
+	/**
+	 * @param  array{string, ?string, string, ?string}  $m
+	 * @param  array{int, ?int, int, ?int}  $offsets
+	 */
+	private function parseStrikethrough(ParseContext $ctx, array $m, array $offsets): Nodes\InlineNode
+	{
+		return new DelimiterNode($m[2], $m[1] ?? '', $m[3] ?? '', new Range($offsets[2], strlen($m[2])));
 	}
 }

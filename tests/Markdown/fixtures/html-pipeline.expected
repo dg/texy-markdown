@@ -774,22 +774,12 @@ main = print $ parseTags tags
 <p>okay</p>
 
 === 170 HTML blocks
-<script
-type="text/javascript">
-// JavaScript example
-
-document.getElementById("demo").innerHTML = "Hello JavaScript!";
-</script>
+&lt;script type="text/javascript"&gt; // JavaScript example
+document.getElementById("demo").innerHTML = "Hello JavaScript!"; &lt;/script&gt;
 <p>okay</p>
 
 === 171 HTML blocks
-<textarea>
-
-*foo*
-
-_bar_
-
-</textarea>
+&lt;textarea&gt; *foo* _bar_ &lt;/textarea&gt;
 === 172 HTML blocks
 &lt;style type="text/css"&gt; h1 {color:red;} p {color:blue;} &lt;/style&gt;
 <p>okay</p>
@@ -821,9 +811,7 @@ _bar_
 <p><em>baz</em></p>
 
 === 178 HTML blocks
-<script>
-foo
-</script>1. *bar*
+&lt;script&gt; foo &lt;/script&gt;1. *bar*
 === 179 HTML blocks
 <!-- Foo
 
@@ -2836,7 +2824,7 @@ href="mailto:foo+special&#64;Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a><
 <p>&lt;&gt;</p>
 
 === 608 Autolinks
-<p>&lt; https://foo.bar &gt;</p>
+<p>&lt; <a href="https://foo.bar">https://foo.bar</a> &gt;</p>
 
 === 609 Autolinks
 <p>&lt;m:abc&gt;</p>
@@ -2845,10 +2833,10 @@ href="mailto:foo+special&#64;Bar.baz-bar0.com">foo+special@Bar.baz-bar0.com</a><
 <p>&lt;foo.bar.baz&gt;</p>
 
 === 611 Autolinks
-<p>https://example.com</p>
+<p><a href="https://example.com">https://example.com</a></p>
 
 === 612 Autolinks
-<p>foo@bar.example.com</p>
+<p><a href="mailto:foo&#64;bar.example.com">foo@bar.example.com</a></p>
 
 === 613 Raw HTML
 <p>&lt;a&gt;&lt;bab&gt;&lt;c2c&gt;</p>

@@ -8,6 +8,7 @@
  *   php tools/spec-score.php Links            one section
  *   php tools/spec-score.php Links -v         with a diff of every failure
  *   php tools/spec-score.php -l               just the list of failing example numbers
+ *   php tools/spec-score.php --gfm            score against the GFM extension fixture
  *   php tools/spec-score.php -e 565 569       show these examples, whatever their section
  */
 
@@ -23,6 +24,7 @@ require __DIR__ . '/../tests/SpecRenderer.php';
 $args = array_slice($argv, 1);
 $verbose = in_array('-v', $args, true);
 $listOnly = in_array('-l', $args, true);
+$gfm = in_array('--gfm', $args, true);
 $examples = [];
 if (($i = array_search('-e', $args, true)) !== false) {
 	$examples = array_map('intval', array_filter(array_slice($args, $i + 1), 'ctype_digit'));
@@ -36,14 +38,14 @@ foreach ($args as $arg) {
 	}
 }
 
-$file = __DIR__ . '/../tests/Markdown/fixtures/spec-commonmark.json';
+$file = __DIR__ . '/../tests/Markdown/fixtures/' . ($gfm ? 'spec-gfm' : 'spec-commonmark') . '.json';
 if (!is_file($file)) {
 	die("Missing fixture $file\n");
 }
 
 $tests = json_decode(file_get_contents($file), true, flags: JSON_THROW_ON_ERROR);
-$markdown = new Markdown;
-$renderer = new SpecRenderer;
+$markdown = $gfm ? Markdown::gfm() : new Markdown;
+$renderer = new SpecRenderer(tagFilter: $gfm);
 $sections = [];
 
 // what gets shown: the failures, or with -e whatever was asked for

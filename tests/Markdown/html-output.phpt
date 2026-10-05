@@ -58,6 +58,7 @@ test('the defaults apply only to a configuration of its own', function () {
 	$markdown = new Markdown($config);
 	Assert::same('cs', $markdown->config->locale);
 	Assert::true($markdown->config->hyphenation);
+	Assert::same($config, Markdown::gfm($config)->config);
 });
 
 

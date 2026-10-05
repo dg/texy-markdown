@@ -15,7 +15,7 @@ require __DIR__ . '/../bootstrap.php';
 
 
 // a tab inside a container partly turns into spaces, so the content is longer than its source
-const Skipped = [5, 6, 7];
+const Skipped = ['spec-commonmark' => [5, 6, 7]];
 
 
 /** @return list<string> */
@@ -56,20 +56,21 @@ function contains(Range $outer, Range $inner): bool
 }
 
 
-$markdown = new Markdown;
-$failures = [];
-foreach (loadSpec('spec-commonmark') as $case) {
-	if (in_array($case['example'], Skipped, true)) {
-		continue;
+foreach (['spec-commonmark' => new Markdown, 'spec-gfm' => Markdown::gfm()] as $spec => $markdown) {
+	$failures = [];
+	foreach (loadSpec($spec) as $case) {
+		if (in_array($case['example'], Skipped[$spec] ?? [], true)) {
+			continue;
+		}
+
+		$errors = check($markdown->parse($case['markdown']), null, strlen(Markdown::normalize($case['markdown'])));
+		if ($errors) {
+			$failures[] = "example $case[example]: " . implode('; ', $errors);
+		}
 	}
 
-	$errors = check($markdown->parse($case['markdown']), null, strlen(Markdown::normalize($case['markdown'])));
-	if ($errors) {
-		$failures[] = "example $case[example]: " . implode('; ', $errors);
-	}
+	Assert::same([], $failures, $spec);
 }
-
-Assert::same([], $failures);
 
 
 test('every line of code maps to where it is written', function () {

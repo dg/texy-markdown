@@ -13,7 +13,7 @@ use function strlen;
 
 
 /**
- * A run of `*` or `_` the parser left undecided.
+ * A run of `*`, `_` or `~` the parser left undecided.
  *
  * Whether a run opens emphasis, closes it or is literal text is a property of the
  * whole sequence of runs in a container, so the parser only marks the run and
