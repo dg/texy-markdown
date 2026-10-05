@@ -107,12 +107,42 @@ test('a link and an image in raw HTML are judged by the same URL policy', functi
 });
 
 
+test('the tag filter of GFM makes text of its tags', function () {
+	Assert::same('<p>a &lt;script&gt;x&lt;/script&gt; <b>y</b></p>', html('a <script>x</script> <b>y</b>', Markdown::gfm()));
+	Assert::same('<p>&lt;xmp&gt;<b>y</b></p>', html("<xmp><b>y</b>\n", Markdown::gfm()));
+
+	$markdown = Markdown::gfm();
+	$markdown->config->hyphenation = true;
+	Assert::same(
+		'<p>a &lt;iframe src="https://example.com/nejneobhospodarovavatelnejsimi"&gt;</p>',
+		html('a <iframe src="https://example.com/nejneobhospodarovavatelnejsimi">', $markdown),
+	);
+
+	$markdown = Markdown::gfm();
+	$markdown->addPass(
+		fn(Texy\Nodes\DocumentNode $document) => $document->content->children[0]->content->children[] = new HtmlTagNode(
+			'script',
+			['src' => 'x'],
+		),
+		Texy\Stage::Syntax,
+	);
+	Assert::same('<p>a&lt;script src="x"&gt;</p>', html('a', $markdown));
+});
+
+
 test('safe mode keeps raw HTML under the whitelist', function () {
 	$markdown = new Markdown;
 	Configurator::safeMode($markdown);
 
 	Assert::same('<p><b>x</b> &lt;div&gt;y&lt;/div&gt;</p>', html('<b class="c">x</b> <div>y</div>', $markdown));
 	Assert::same('<p>a b</p>', html('a <!--c--> b', $markdown));
+});
+
+
+test('safe mode leaves the checkbox of a task', function () {
+	$markdown = Markdown::gfm();
+	Configurator::safeMode($markdown);
+	Assert::same('<ul><li><input type="checkbox" disabled checked> a</li></ul>', html('- [x] a', $markdown));
 });
 
 

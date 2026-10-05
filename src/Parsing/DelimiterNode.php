@@ -13,7 +13,7 @@ use function strlen;
 
 
 /**
- * A run of `*` or `_` with its left/right-flanking classification, left to EmphasisPass to pair.
+ * A run of `*`, `_` or `~` with its left/right-flanking classification, left to EmphasisPass to pair.
  *
  * @internal
  */

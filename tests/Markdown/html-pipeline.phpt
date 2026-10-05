@@ -16,7 +16,7 @@ require __DIR__ . '/../bootstrap.php';
 
 test('every example renders through Texy', function () {
 	$cases = loadSpec('spec-commonmark');
-	$markdown = new Markdown;
+	$markdown = Markdown::gfm();
 	$renderer = $markdown->createHtmlRenderer();
 	$actual = '';
 

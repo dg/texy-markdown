@@ -18,7 +18,7 @@ use function strlen;
 
 
 /**
- * Marks runs of `*` and `_`; the pairing is EmphasisPass's job.
+ * Marks runs of `*`, `_` and of `~` for GFM strikethrough; the pairing is EmphasisPass's job.
  *
  * @internal
  */
@@ -30,6 +30,12 @@ final class EmphasisModule extends Texy\Module
 			Syntax::Delimiter,
 			'~(?:(?<=(.))|(?<!.))(\*+|_+)(?=(.)|$)~s',
 			$this->parseDelimiter(...),
+		);
+
+		$engine->addInline(
+			Syntax::Strikethrough,
+			'~(?:(?<=(.))|(?<!.))(\~{1,2})(?!\~)(?=(.)|$)~s',
+			$this->parseStrikethrough(...),
 		);
 	}
 
@@ -46,5 +52,15 @@ final class EmphasisModule extends Texy\Module
 			$m[3] ?? '',
 			new Range($offsets[2], strlen($m[2])),
 		);
+	}
+
+
+	/**
+	 * @param  array{string, ?string, string, ?string}  $m
+	 * @param  array{int, ?int, int, ?int}  $offsets
+	 */
+	private function parseStrikethrough(ParseContext $ctx, array $m, array $offsets): Nodes\InlineNode
+	{
+		return new DelimiterNode($m[2], $m[1] ?? '', $m[3] ?? '', new Range($offsets[2], strlen($m[2])));
 	}
 }

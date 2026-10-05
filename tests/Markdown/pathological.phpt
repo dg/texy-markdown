@@ -68,9 +68,10 @@ test('a paragraph of thousands of lines and a line of thousands of stars are rea
 
 test('long repetitions inside one construct are read', function () {
 	// a backtracking repetition exhausts the stack or the backtracking limit of PCRE on each of them
-	$markdown = new Markdown;
+	$markdown = Markdown::gfm();
 	$count = fn(string $source, string $class) => count($markdown->parse($source)->find($class));
 
+	Assert::same(1, $count(str_repeat('| a ', 5000) . "|\n" . str_repeat('| - ', 5000) . '|', Texy\Nodes\TableNode::class));
 	Assert::same(1, $count('# a' . str_repeat(' ', 20_000) . 'b' . str_repeat(' #', 2000), Texy\Nodes\HeadingNode::class));
 	Assert::same(1, $count('<a ' . str_repeat('b ', 20_000) . '>', Texy\Nodes\HtmlBlockNode::class));
 	Assert::same(1, $count('x <a ' . str_repeat('b ', 20_000) . '>', Texy\Nodes\HtmlTagNode::class));

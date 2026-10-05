@@ -6,11 +6,24 @@
 
 use Tester\Assert;
 use Texy\Markdown\Markdown;
-use Texy\Nodes\{LinkNode, ParagraphNode};
+use Texy\Nodes\{HtmlBlockNode, HtmlTagNode, LinkNode, ParagraphNode};
 use Texy\Parsing\ParseContext;
 use Texy\Stage;
 
 require __DIR__ . '/../bootstrap.php';
+
+
+test('the disallowed raw HTML is filtered by transform()', function () {
+	$markdown = Markdown::gfm();
+	$document = $markdown->parse("<script>\nx\n</script>\n");
+	$block = $document->findFirst(HtmlBlockNode::class);
+	Assert::same("<script>\nx\n</script>", $block->code);
+	Assert::count(2, $block->find(HtmlTagNode::class));
+
+	$markdown->transform($document);
+	Assert::same([], $block->find(HtmlTagNode::class));
+	Assert::same("<script>\nx\n</script>", $block->content->getPlainText());
+});
 
 
 test('a block syntax reads its inline content through the context, at any depth', function () {

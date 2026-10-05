@@ -23,11 +23,25 @@ final class SpecRenderer
 	private string $source;
 
 
+	public function __construct(
+		private bool $tagFilter = false,
+	) {
+	}
+
+
 	/** @param  string  $source  the text the ranges of the document are offsets in, i.e. Markdown::normalize() */
 	public function render(TexyNodes\DocumentNode $document, string $source): string
 	{
 		$this->source = $source;
 		return $this->renderBlocks($document->content->children);
+	}
+
+
+	private function filterTags(string $html): string
+	{
+		return $this->tagFilter
+			? preg_replace('~<(?=/?(?:title|textarea|style|xmp|iframe|noembed|noframes|script|plaintext)(?=[ \t\n>/]|$))~i', '&lt;', $html)
+			: $html;
 	}
 
 
@@ -64,13 +78,16 @@ final class SpecRenderer
 				return "<pre><code$class>" . self::escape($hasLines ? $node->code . "\n" : '') . "</code></pre>\n";
 
 			case $node instanceof TexyNodes\HtmlBlockNode:
-				return $node->code . "\n";
+				return $this->filterTags($node->code) . "\n";
 
 			case $node instanceof TexyNodes\BlockQuoteNode:
 				return "<blockquote>\n" . $this->renderBlocks($node->content->children) . "</blockquote>\n";
 
 			case $node instanceof TexyNodes\ListNode:
 				return $this->renderList($node);
+
+			case $node instanceof TexyNodes\TableNode:
+				return $this->renderTable($node);
 
 			case $node instanceof TexyNodes\ContentNode:
 				return $this->renderBlocks($node->children, $tight);
@@ -91,6 +108,11 @@ final class SpecRenderer
 		foreach ($node->items as $item) {
 			$children = $item->content->children;
 			$inner = $this->renderBlocks($children, $tight);
+			if ($item->checked !== null) {
+				$checkbox = '<input ' . ($item->checked ? 'checked="" ' : '') . 'disabled="" type="checkbox"> ';
+				$inner = str_starts_with($inner, '<p>') ? '<p>' . $checkbox . substr($inner, 3) : $checkbox . $inner;
+			}
+
 			if ($inner === '') {
 				$res .= "<li></li>\n";
 				continue;
@@ -105,6 +127,32 @@ final class SpecRenderer
 		}
 
 		return $res . "</$tag>\n";
+	}
+
+
+	private function renderTable(TexyNodes\TableNode $node): string
+	{
+		$head = $body = '';
+		foreach ($node->rows as $row) {
+			$cells = '';
+			foreach ($row->cells as $cell) {
+				$tag = $cell->header ? 'th' : 'td';
+				$align = $cell->modifier?->hAlign;
+				$cells .= "<$tag" . ($align === null ? '' : " align=\"$align\"") . '>'
+					. $this->renderInlines($cell->content->children) . "</$tag>\n";
+			}
+
+			$markup = "<tr>\n$cells</tr>\n";
+			if ($row->header) {
+				$head .= $markup;
+			} else {
+				$body .= $markup;
+			}
+		}
+
+		return "<table>\n<thead>\n$head</thead>\n"
+			. ($body === '' ? '' : "<tbody>\n$body</tbody>\n")
+			. "</table>\n";
 	}
 
 
@@ -139,13 +187,14 @@ final class SpecRenderer
 				return "<br />\n";
 
 			case $node instanceof TexyNodes\HtmlTagNode:
-				return (string) $node->source;
+				return $this->filterTags((string) $node->source);
 
 			case $node instanceof TexyNodes\PhraseNode:
 				$inner = $this->renderInlines($node->content->children);
 				return match ($node->type) {
 					TexyNodes\PhraseType::Emphasis => "<em>$inner</em>",
 					TexyNodes\PhraseType::Strong => "<strong>$inner</strong>",
+					TexyNodes\PhraseType::Deleted => "<del>$inner</del>",
 					default => $inner,
 				};
 
