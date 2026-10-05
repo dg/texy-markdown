@@ -23,7 +23,7 @@ $cases = json_decode(
 	flags: JSON_THROW_ON_ERROR,
 );
 
-$markdown = new Markdown;
+$markdown = Markdown::gfm();
 $renderer = $markdown->createHtmlRenderer();
 $out = '';
 

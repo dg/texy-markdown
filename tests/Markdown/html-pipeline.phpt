@@ -16,7 +16,7 @@ require __DIR__ . '/../bootstrap.php';
 
 test('every example renders through Texy', function () {
 	$cases = loadSpec('spec-commonmark');
-	$markdown = new Markdown;
+	$markdown = Markdown::gfm();
 	$renderer = $markdown->createHtmlRenderer();
 	$actual = '';
 
@@ -35,8 +35,8 @@ test('every example renders through Texy', function () {
 
 
 test('rendering is a pure function of the AST', function () {
-	$markdown = new Markdown;
-	$document = $markdown->parse("# Hi *there*\n\n- a\n- b\n");
+	$markdown = Markdown::gfm();
+	$document = $markdown->parse("# Hi *there*\n\n- a\n- b\n\n| x | y |\n| - | - |\n| 1 | 2 |\n");
 	$markdown->transform($document);
 	$renderer = $markdown->createHtmlRenderer();
 

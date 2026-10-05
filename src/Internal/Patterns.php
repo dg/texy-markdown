@@ -68,7 +68,7 @@ final class Patterns
 	/**
 	 * The lines that begin a new block and therefore may not be swallowed as a
 	 * paragraph continuation. Consumers: the setext run, the block quote and list lazy
-	 * tests, and LineState.
+	 * tests, the table header and row tests, and LineState.
 	 *
 	 * Deliberately excludes an indented code block (four spaces continue a paragraph)
 	 * and HTML block type 7 (which may not interrupt a paragraph either).

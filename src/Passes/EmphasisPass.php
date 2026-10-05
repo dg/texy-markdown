@@ -69,10 +69,13 @@ final class EmphasisPass
 					continue;
 				}
 
-				// the "rule of three"
-				$forbidden = ($candidate->canClose || $closer->canOpen)
-					&& ($candidate->origLength + $closer->origLength) % 3 === 0
-					&& !($candidate->origLength % 3 === 0 && $closer->origLength % 3 === 0);
+				// GFM pairs tildes only with a run of the same length, and the rule of
+				// three does not apply to them
+				$forbidden = $closer->char === '~'
+					? $candidate->origLength !== $closer->origLength
+					: ($candidate->canClose || $closer->canOpen)
+						&& ($candidate->origLength + $closer->origLength) % 3 === 0
+						&& !($candidate->origLength % 3 === 0 && $closer->origLength % 3 === 0);
 
 				if (!$forbidden) {
 					$openerPos = $i;
@@ -92,13 +95,21 @@ final class EmphasisPass
 			}
 
 			$opener = $delims[$openerPos];
-			$use = $opener->remaining >= 2 && $closer->remaining >= 2 ? 2 : 1;
+			$use = match (true) {
+				$closer->char === '~' => $closer->remaining,
+				$opener->remaining >= 2 && $closer->remaining >= 2 => 2,
+				default => 1,
+			};
 
 			$from = self::indexOf($nodes, $opener);
 			$to = self::indexOf($nodes, $closer);
 			$phrase = new Nodes\PhraseNode(
 				new Nodes\ContentNode(array_slice($nodes, $from + 1, $to - $from - 1)),
-				$use === 2 ? Syntax::Strong : Syntax::Emphasis,
+				match (true) {
+					$closer->char === '~' => Syntax::Deleted,
+					$use === 2 => Syntax::Strong,
+					default => Syntax::Emphasis,
+				},
 			);
 
 			$opener->remaining -= $use;

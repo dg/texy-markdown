@@ -47,13 +47,28 @@ final class Markdown
 		$this->registry = new Registry;
 		$this->state = new ParseState;
 
-		foreach ($this->createSyntaxes() as $syntax) {
+		foreach ([...$this->createSyntaxes(), ...$this->createGfmSyntaxes()] as $syntax) {
 			$syntax->register();
 		}
 
 		foreach (self::defaultSyntaxes() as $name) {
 			$this->allowed[$name] = true;
 		}
+	}
+
+
+	/**
+	 * CommonMark plus the five GitHub Flavored Markdown extensions. Each of them can be
+	 * switched off again through $allowed.
+	 */
+	public static function gfm(): self
+	{
+		$markdown = new self;
+		foreach (self::gfmSyntaxes() as $name) {
+			$markdown->allowed[$name] = true;
+		}
+
+		return $markdown;
 	}
 
 
@@ -122,8 +137,9 @@ final class Markdown
 
 
 	/**
-	 * Turns the syntax tree into the document, in place: runs the consumer's passes
-	 * and, when a Texy is given, its typography. A document is transformed only once.
+	 * Turns the syntax tree into the document, in place: filters the raw HTML GFM
+	 * disallows, runs the consumer's passes and, when a Texy is given, its typography.
+	 * A document is transformed only once.
 	 */
 	public function transform(Nodes\DocumentNode $document, ?Texy $texy = null): void
 	{
@@ -132,6 +148,7 @@ final class Markdown
 		}
 
 		$document->meta['transformed'] = true;
+		(new Passes\TagFilterPass(!empty($this->allowed[Syntax::TagFilter])))->process($document);
 		$this->runPasses($document, Stage::Transform);
 		$texy?->applyAstTypography($document);
 		$this->runPasses($document, Stage::Finalize);
@@ -238,11 +255,27 @@ final class Markdown
 	}
 
 
+	/**
+	 * The GFM syntaxes are always registered and left disabled; gfm() only flips them
+	 * on, so that the two flavours share one engine and one registration order.
+	 * @return list<Internal\SyntaxRegistrar>
+	 */
+	private function createGfmSyntaxes(): array
+	{
+		return [
+			new Blocks\Tables($this->registry),
+			new Inlines\ExtendedAutolinks($this->registry),
+			new Inlines\Strikethrough($this->registry),
+		];
+	}
+
+
 	/** @return list<\Closure(Nodes\DocumentNode): void> */
 	private function createSyntaxPasses(ParseContext $context): array
 	{
 		return [
 			(new Passes\LinkDefinitionPass($this->state, !empty($this->allowed[Syntax::LinkDefinition])))->process(...),
+			(new Passes\TaskListPass(!empty($this->allowed[Syntax::TaskList])))->process(...),
 			(new Passes\InlineParsePass($context))->process(...),
 			(new Passes\EmphasisPass)->process(...),
 			(new Passes\ImagePass)->process(...),
@@ -261,6 +294,16 @@ final class Markdown
 			Syntax::HtmlInline, Syntax::Escape, Syntax::EscapedBreak,
 			Syntax::HardBreak, Syntax::SoftBreak, Syntax::Image, Syntax::Link,
 			Syntax::Delimiter, Syntax::Entity,
+		];
+	}
+
+
+	/** @return list<string> */
+	private static function gfmSyntaxes(): array
+	{
+		return [
+			Syntax::Table, Syntax::TaskList, Syntax::Strikethrough,
+			Syntax::AutolinkExtended, Syntax::TagFilter,
 		];
 	}
 }

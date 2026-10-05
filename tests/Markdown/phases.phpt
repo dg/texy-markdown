@@ -6,9 +6,22 @@
 
 use Tester\Assert;
 use Texy\Markdown\Markdown;
+use Texy\Markdown\Nodes\HtmlBlockNode;
+use Texy\NodeHelpers;
 use Texy\Stage;
 
 require __DIR__ . '/../bootstrap.php';
+
+
+test('the disallowed raw HTML is filtered by transform()', function () {
+	$markdown = Markdown::gfm();
+	$document = $markdown->parse("<script>\nx\n</script>\n");
+	$block = NodeHelpers::findFirst($document, fn($node) => $node instanceof HtmlBlockNode);
+	Assert::same("<script>\nx\n</script>", $block->html);
+
+	$markdown->transform($document);
+	Assert::same("&lt;script>\nx\n&lt;/script>", $block->html);
+});
 
 
 test('passes run in the stage they are registered for, transform() only once', function () {

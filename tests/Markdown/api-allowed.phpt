@@ -20,6 +20,31 @@ function render(Markdown $markdown, string $text): string
 }
 
 
+test('gfm() enables the extensions, the plain constructor does not', function () {
+	$plain = new Markdown;
+	$gfm = Markdown::gfm();
+
+	Assert::same("<p>~~gone~~</p>\n", render($plain, '~~gone~~'));
+	Assert::same("<p><del>gone</del></p>\n", render($gfm, '~~gone~~'));
+
+	Assert::same("<p>www.example.com</p>\n", render($plain, 'www.example.com'));
+	Assert::same(
+		"<p><a href=\"http://www.example.com\">www.example.com</a></p>\n",
+		render($gfm, 'www.example.com'),
+	);
+});
+
+
+test('a GFM extension can be switched off again', function () {
+	$markdown = Markdown::gfm();
+	$markdown->allowed[Syntax::Strikethrough] = false;
+
+	Assert::same("<p>~~gone~~</p>\n", render($markdown, '~~gone~~'));
+	// the others are untouched
+	Assert::same("<p><a href=\"http://www.example.com\">www.example.com</a></p>\n", render($markdown, 'www.example.com'));
+});
+
+
 test('a CommonMark syntax can be switched off', function () {
 	$markdown = new Markdown;
 	$markdown->allowed[Syntax::HtmlInline] = false;
@@ -39,7 +64,7 @@ test('indented code blocks can be switched off', function () {
 
 
 test('a reserved byte in the input cannot be mistaken for one the parser wrote', function () {
-	$markdown = new Markdown;
+	$markdown = Markdown::gfm();
 
 	// the lazy-continuation marker must not reach a block pattern
 	Assert::contains('&#xFFFD;', str_replace("\u{FFFD}", '&#xFFFD;', render($markdown, "\x1Atext\n")));

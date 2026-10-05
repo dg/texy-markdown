@@ -4,9 +4,10 @@ It is my fervent wish that this file guide every AI coding agent working with co
 
 ## Project Overview
 
-`texy/markdown` gives Texy the Markdown language: it parses CommonMark into a standard
-**Texy AST**. HTML output is Texy's job - the AST goes through Texy's own renderer, so a
-Markdown document gets typography, sanitization and well-forming for free.
+`texy/markdown` gives Texy the Markdown language: it parses CommonMark and GitHub
+Flavored Markdown into a standard **Texy AST**. HTML output is Texy's job - the AST goes
+through Texy's own renderer, so a Markdown document gets typography, sanitization and
+well-forming for free.
 
 - **PHP Version**: 8.2 - 8.6
 - **Package**: `texy/markdown`, namespace `Texy\Markdown`
@@ -34,7 +35,7 @@ before the 1.0 release**: drop the `repositories` entry and tighten the constrai
 ## Conventions
 
 - Every file starts with `declare(strict_types=1);`; Nette Coding Standard.
-- Tests are Nette Tester `.phpt`. The spec suite is a **data test** over committed
+- Tests are Nette Tester `.phpt`. The two spec suites are **data tests** over committed
   fixtures in `tests/fixtures/`; nothing is ever downloaded at test time.
 
 ## Working in this repo

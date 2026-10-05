@@ -68,6 +68,9 @@ final class SpecRenderer
 			case $node instanceof Nodes\ListNode:
 				return $this->renderList($node);
 
+			case $node instanceof TexyNodes\TableNode:
+				return $this->renderTable($node);
+
 			case $node instanceof TexyNodes\ContentNode:
 				return $this->renderBlocks($node->children, $tight);
 
@@ -103,6 +106,32 @@ final class SpecRenderer
 	}
 
 
+	private function renderTable(TexyNodes\TableNode $node): string
+	{
+		$head = $body = '';
+		foreach ($node->rows as $row) {
+			$cells = '';
+			foreach ($row->cells as $cell) {
+				$tag = $cell->header ? 'th' : 'td';
+				$align = $cell->modifier?->hAlign;
+				$cells .= "<$tag" . ($align === null ? '' : " align=\"$align\"") . '>'
+					. $this->renderInlines($cell->content->children) . "</$tag>\n";
+			}
+
+			$markup = "<tr>\n$cells</tr>\n";
+			if ($row->header) {
+				$head .= $markup;
+			} else {
+				$body .= $markup;
+			}
+		}
+
+		return "<table>\n<thead>\n$head</thead>\n"
+			. ($body === '' ? '' : "<tbody>\n$body</tbody>\n")
+			. "</table>\n";
+	}
+
+
 	/** @param  array<Node>  $nodes */
 	private function renderInlines(array $nodes): string
 	{
@@ -131,12 +160,21 @@ final class SpecRenderer
 			case $node instanceof TexyNodes\LineBreakNode:
 				return "<br />\n";
 
+			case $node instanceof TexyNodes\HtmlTagNode:
+				$attrs = '';
+				foreach ($node->attributes as $name => $value) {
+					$attrs .= ' ' . $name . '="' . self::escape((string) $value) . '"';
+				}
+
+				return '<' . $node->name . $attrs . '>';
+
 			case $node instanceof TexyNodes\PhraseNode:
 				$inner = $this->renderInlines($node->content->children);
 				return match ($node->type) {
 					Syntax::Emphasis => "<em>$inner</em>",
 					Syntax::Strong => "<strong>$inner</strong>",
 					Syntax::Code => "<code>$inner</code>",
+					Syntax::Deleted => "<del>$inner</del>",
 					default => $inner,
 				};
 

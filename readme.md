@@ -6,8 +6,8 @@ Texy Markdown
 [![Latest Stable Version](https://poser.pugx.org/texy/markdown/v/stable)](https://github.com/dg/texy-markdown/releases)
 [![License](https://img.shields.io/badge/license-New%20BSD-blue.svg)](https://github.com/dg/texy-markdown/blob/master/license.md)
 
-Markdown for [Texy](https://texy.deegee.dev). It parses CommonMark into a standard
-**Texy AST**.
+Markdown for [Texy](https://texy.deegee.dev). It parses CommonMark and GitHub
+Flavored Markdown into a standard **Texy AST**.
 
 The AST is the point. Markdown and Texy become two front ends to one tree, so a
 Markdown document goes out through Texy's own renderer and gets typography, HTML
@@ -31,9 +31,14 @@ To render with your own Texy configuration - typography, link roots, safe mode:
     $texy = new Texy\Texy;
     $html = $markdown->toHtml($text, $texy);
 
+GitHub Flavored Markdown adds tables, task lists, strikethrough, extended autolinks
+and the disallowed-raw-HTML filter:
+
+    $markdown = Texy\Markdown\Markdown::gfm();
+
 Every construct can be switched off individually:
 
-    $markdown->allowed[Texy\Markdown\Syntax::HtmlBlock] = false;
+    $markdown->allowed[Texy\Markdown\Syntax::Table] = false;
 
 The parsed document is an ordinary Texy AST, so `NodeHelpers`, `NodeTraverser`,
 transform passes and every Texy renderer work on it:
