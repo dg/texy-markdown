@@ -1,0 +1,565 @@
+<?php declare(strict_types=1);
+
+/**
+ * Test: the Markdown output renderer, over documents parsed by Texy and by Markdown.
+ */
+
+use Tester\Assert;
+use Texy\Markdown\Markdown;
+use Texy\Markdown\Output\Markdown\{CodeBlockStyle, HeadingStyle, LinkStyle, Renderer};
+
+require __DIR__ . '/../bootstrap.php';
+
+
+test('a fenced code block survives the round trip', function () {
+	$texy = new Texy\Texy;
+	$document = $texy->parse("```php\n\$x = 1;\n```");
+	$texy->transform($document);
+	$markdown = (new Renderer)->render($document);
+	Assert::same("```php\n\$x = 1;\n```\n", $markdown);
+
+	// and back
+	Assert::same("<pre class=\"language-php\"><code>\$x = 1;</code></pre>\n", (new Texy\Texy)->toHtml($markdown));
+});
+
+
+test('a table with a caption falls back to an HTML table', function () {
+	$texy = new Texy\Texy;
+	$render = function (string $s) use ($texy): string {
+		$document = $texy->parse($s);
+		$texy->transform($document);
+		return (new Renderer)->render($document);
+	};
+
+	Assert::same(
+		"<table>\n<caption>Caption</caption>\n<tr><td>a</td><td>b</td></tr>\n</table>\n",
+		$render("|## Caption\n| a | b\n"),
+	);
+	// without a caption GFM syntax is enough
+	Assert::same("|  |  |\n| --- | --- |\n| a | b |\n", $render("| a | b\n"));
+});
+
+
+test('soft breaks, HTML blocks and raw inline HTML of a Markdown document survive the round trip', function () {
+	$markdown = new Markdown;
+	$source = "first\nsecond\n\n<div>\n*block*\n</div>\n\na <b class=\"x\">bold</b> <!-- c --> word\n";
+	Assert::same($source, (new Renderer)->render($markdown->parse($source)));
+});
+
+
+function toMarkdown(string $text): string
+{
+	$texy = new Texy\Texy;
+	$ast = $texy->parse($text);
+	$texy->transform($ast);
+	return (new Renderer)->render($ast);
+}
+
+
+// Paragraphs
+test('paragraph', function () {
+	Assert::same(
+		"Hello world.\n",
+		toMarkdown('Hello world.'),
+	);
+});
+
+
+test('multiple paragraphs', function () {
+	Assert::same(
+		"First paragraph.\n\nSecond paragraph.\n",
+		toMarkdown("First paragraph.\n\nSecond paragraph."),
+	);
+});
+
+
+// Headings
+test('heading ATX style', function () {
+	// Texy uses dynamic balancing - first heading becomes level 1
+	Assert::same(
+		"# Heading 1\n",
+		toMarkdown("Heading 1\n*********"),
+	);
+});
+
+
+test('heading setext style', function () {
+	$texy = new Texy\Texy;
+	$texy->config->headingTop = 1;
+	$texy->config->headingLevels = ['#' => 1, '*' => 1];
+	$ast = $texy->parse("Heading 1\n*********");
+	$texy->transform($ast);
+	$generator = new Renderer;
+	$generator->headingStyle = HeadingStyle::Setext;
+	Assert::same(
+		"Heading 1\n=========\n",
+		$generator->render($ast),
+	);
+});
+
+
+// Phrases
+test('strong', function () {
+	Assert::same(
+		"**bold**\n",
+		toMarkdown('**bold**'),
+	);
+});
+
+
+test('emphasis', function () {
+	Assert::same(
+		"*italic*\n",
+		toMarkdown('//italic//'),
+	);
+});
+
+
+test('code', function () {
+	Assert::same(
+		"`code`\n",
+		toMarkdown('`code`'),
+	);
+});
+
+
+test('code content is literal, not escaped', function () {
+	Assert::same(
+		"`Nette\\Forms\\Form` and `[int, *]` and `'video/*'`\n",
+		toMarkdown("`Nette\\Forms\\Form` and `[int, *]` and `'video/*'`"),
+	);
+});
+
+
+test('code containing backticks gets a longer fence', function () {
+	$span = fn(string $code) => substr(rtrim((new Renderer)->render(new Texy\Nodes\DocumentNode(new Texy\Nodes\ContentNode([
+		new Texy\Nodes\ParagraphNode(new Texy\Nodes\ContentNode([new Texy\Nodes\TextNode('x '), new Texy\Nodes\InlineCodeNode($code)])),
+	])))), 2);
+	Assert::same('``a`b``', $span('a`b'));
+	Assert::same('```a``b ```', $span('a``b '));
+	Assert::same('`` `a ``', $span('`a'));
+	Assert::same('`  a  `', $span(' a '));
+});
+
+
+test('code in a table cell keeps the pipe escaped', function () {
+	Assert::same(
+		"| `int\\|float` |\n| --- |\n",
+		toMarkdown("| `int\\|float`\n|---"),
+	);
+});
+
+
+test('strikethrough (GFM)', function () {
+	$texy = new Texy\Texy;
+	$texy->allowedSyntax[Texy\Syntax::Deleted] = true;
+	$ast = $texy->parse('--deleted--');
+	$texy->transform($ast);
+	$generator = new Renderer;
+	Assert::same(
+		"~~deleted~~\n",
+		$generator->render($ast),
+	);
+});
+
+
+// Links
+test('inline link', function () {
+	Assert::same(
+		"[link](https://example.com)\n",
+		toMarkdown('"link":https://example.com'),
+	);
+});
+
+
+test('reference link', function () {
+	$texy = new Texy\Texy;
+	$ast = $texy->parse('"link":https://example.com');
+	$texy->transform($ast);
+	$generator = new Renderer;
+	$generator->linkStyle = LinkStyle::Reference;
+	Assert::same(
+		"[link][1]\n\n\n[1]: https://example.com\n",
+		$generator->render($ast),
+	);
+});
+
+
+// Images
+test('image', function () {
+	Assert::same(
+		"![](image.png)\n",
+		toMarkdown('[* image.png *]'),
+	);
+});
+
+
+test('image with alt', function () {
+	Assert::same(
+		"![Alt text](image.png)\n",
+		toMarkdown('[* image.png .(Alt text) *]'),
+	);
+});
+
+
+// Lists
+test('unordered list', function () {
+	Assert::same(
+		"- First\n- Second\n- Third\n",
+		toMarkdown("- First\n- Second\n- Third"),
+	);
+});
+
+
+test('ordered list', function () {
+	Assert::same(
+		"1. First\n2. Second\n3. Third\n",
+		toMarkdown("1) First\n2) Second\n3) Third"),
+	);
+});
+
+
+// Code blocks
+test('fenced code block', function () {
+	$input = "/--code php\n\$x = 1;\n\\--";
+	Assert::same(
+		"```php\n\$x = 1;\n```\n",
+		toMarkdown($input),
+	);
+});
+
+
+test('indented code block', function () {
+	$texy = new Texy\Texy;
+	$ast = $texy->parse("/--code\n\$x = 1;\n\\--");
+	$texy->transform($ast);
+	$generator = new Renderer;
+	$generator->codeBlockStyle = CodeBlockStyle::Indented;
+	Assert::same(
+		"    \$x = 1;\n",
+		$generator->render($ast),
+	);
+});
+
+
+// Blockquote
+test('blockquote', function () {
+	Assert::same(
+		"> Quoted text.\n",
+		toMarkdown('> Quoted text.'),
+	);
+});
+
+
+// Tables (GFM)
+test('table', function () {
+	$input = "| A | B |\n|---\n| 1 | 2 |\n| 3 | 4 |";
+	$expected = "| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\n";
+	Assert::same($expected, toMarkdown($input));
+});
+
+
+test('table without a header gets an empty one', function () {
+	$input = "| 1 | 2 |\n| 3 | 4 |";
+	$expected = "|  |  |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\n";
+	Assert::same($expected, toMarkdown($input));
+});
+
+
+test('table with colspan falls back to HTML', function () {
+	$input = "| Name || Age\n| Jesus | Christ | 33";
+	$expected = "<table>\n"
+		. "<tr><td colspan=\"2\">Name</td><td>Age</td></tr>\n"
+		. "<tr><td>Jesus</td><td>Christ</td><td>33</td></tr>\n"
+		. "</table>\n";
+	Assert::same($expected, toMarkdown($input));
+});
+
+
+test('table with rowspan falls back to HTML', function () {
+	$input = "| Bill | 50\n|^ | 52";
+	$expected = "<table>\n"
+		. "<tr><td rowspan=\"2\">Bill</td><td>50</td></tr>\n"
+		. "<tr><td>52</td></tr>\n"
+		. "</table>\n";
+	Assert::same($expected, toMarkdown($input));
+});
+
+
+// Horizontal rule
+test('horizontal rule', function () {
+	Assert::same(
+		"---\n",
+		toMarkdown('----'),
+	);
+});
+
+
+// Line break (Texy syntax: space at the beginning of next line)
+test('line break', function () {
+	Assert::same(
+		"First line  \nsecond line.\n",
+		toMarkdown("First line\n second line."),
+	);
+});
+
+
+// A paragraph that would read as another block
+test('a line of a paragraph that would start a block is escaped', function () {
+	$paragraph = fn(Texy\Nodes\InlineNode ...$children) => new Texy\Nodes\DocumentNode(new Texy\Nodes\ContentNode([
+		new Texy\Nodes\ParagraphNode(new Texy\Nodes\ContentNode($children)),
+	]));
+	$text = fn(string $text) => new Texy\Nodes\TextNode($text);
+	$cases = [
+		"\\- foo\n" => $paragraph($text('- foo')),
+		"1\\. foo\n" => $paragraph($text('1. foo')),
+		"\\# foo\n" => $paragraph($text('# foo')),
+		"\\---\n" => $paragraph($text('---')),
+		"code\n" => $paragraph($text('    code')),
+		"2.5 million\n" => $paragraph($text('2.5 million')),
+		"foo\n\\- bar\n" => $paragraph($text("foo\n- bar")),
+		"foo\n  \\- bar\n" => $paragraph($text("foo\n  - bar")),
+		"foo\n\\===\n" => $paragraph($text("foo\n===")),
+		"foo  \n\\- bar\n" => $paragraph($text('foo'), new Texy\Nodes\LineBreakNode, $text('- bar')),
+		"foo <div>\n" => $paragraph($text("foo\n"), new Texy\Nodes\HtmlTagNode('div')),
+	];
+	foreach ($cases as $expected => $document) {
+		$printed = (new Renderer)->render($document);
+		Assert::same($expected, $printed);
+
+		$blocks = Markdown::gfm()->parse($printed)->content->children;
+		Assert::count(1, $blocks, $expected);
+		Assert::type(Texy\Nodes\ParagraphNode::class, $blocks[0], $expected);
+	}
+
+	$renderer = new Renderer;
+	$renderer->escapeSpecialChars = false;
+	Assert::same("- foo\n", $renderer->render($paragraph($text('- foo'))));
+});
+
+
+test('a paragraph starting with raw HTML that starts a block goes on with the next line, or is left as it is', function () {
+	$render = fn(string $html, string $text) => (new Renderer)->render(new Texy\Nodes\DocumentNode(new Texy\Nodes\ContentNode([
+		new Texy\Nodes\ParagraphNode(new Texy\Nodes\ContentNode([
+			new Texy\Nodes\HtmlTagNode(trim($html, '<>')),
+			new Texy\Nodes\TextNode($text),
+		])),
+	])));
+	Assert::same("<div>\n\\<font\\> a\n- b\n", $render('<div>', "\n<font> a\n- b"));
+
+	foreach (["<br> foo\n\\- bar\n" => "\nfoo\n- bar", "<br> - foo\nbar\n" => "\n- foo\nbar"] as $expected => $text) {
+		$printed = $render('<br>', $text);
+		Assert::same($expected, $printed);
+		Assert::type(Texy\Nodes\ParagraphNode::class, Markdown::gfm()->parse($printed)->content->children[0]);
+	}
+});
+
+
+test('a paragraph of a list item or a quote that would start a nested block is escaped', function () {
+	Assert::same("\\# foo\n", toMarkdown('&#35; foo'));
+	Assert::same("- \\# foo\n", toMarkdown('- &#35; foo'));
+	Assert::same("> \\# foo\n", toMarkdown('> &#35; foo'));
+});
+
+
+// Autolinks
+test('URL autolink', function () {
+	Assert::same(
+		"<https://example.com>\n",
+		toMarkdown('https://example.com'),
+	);
+});
+
+
+test('email autolink', function () {
+	Assert::same(
+		"<test@example.com>\n",
+		toMarkdown('test@example.com'),
+	);
+});
+
+
+// Special characters escaping
+test('escape special characters', function () {
+	Assert::same(
+		"\\*not bold\\*\n",
+		toMarkdown("''*not bold*''"),
+	);
+});
+
+
+test('the ampersand of an entity and a tilde are escaped', function () {
+	$printed = toMarkdown("''&copy; ~~a~~ AT&T''");
+	Assert::same("\\&copy; \\~\\~a\\~\\~ AT&T\n", $printed);
+	Assert::same('&copy; ~~a~~ AT&T', trim((new Texy\Texy)->renderText(Markdown::gfm()->parse($printed))));
+});
+
+
+test('the alternative text of an image and the title of a link read back as they were', function () {
+	$attribute = fn(string $name, string $html) => preg_match("~\\s$name=\"([^\"]*)\"~", $html, $m) ? $m[1] : null;
+	foreach ([
+		'alt' => '[* a.png .(&amp;copy; *x* `y` ~z~ a\b) *]',
+		'title' => '"link .(&amp;copy; a\*b \"q\")":http://a.cz',
+	] as $name => $source) {
+		$texy = new Texy\Texy;
+		$document = $texy->parse($source);
+		$texy->transform($document);
+		$printed = (new Renderer)->render($document);
+		Assert::same($attribute($name, $texy->renderHtml($document)), $attribute($name, Markdown::gfm()->toHtml($printed)), $printed);
+	}
+});
+
+
+test('underscore inside a word is not escaped', function () {
+	Assert::same(
+		"E_USER_WARNING and \\_emphasis\\_ and snake_case\\_\n",
+		toMarkdown("''E_USER_WARNING and _emphasis_ and snake_case_''"),
+	);
+});
+
+
+test('backslash is escaped only before punctuation', function () {
+	Assert::same(
+		"Nette\\Forms\\Form and a\\\\\\*b and end\\\\\n",
+		toMarkdown("''Nette\\Forms\\Form and a\\*b and end\\''"),
+	);
+});
+
+
+test('pre block keeps text, not its HTML', function () {
+	Assert::same(
+		"```\napp/\n└── Model/ &lt; x\n```\n",
+		toMarkdown("/--pre\n<b>app/</b>\n└── <b>Model/</b> &amp;lt; x\n\\--"),
+	);
+});
+
+
+// HTML passthrough
+test('HTML passthrough', function () {
+	Assert::same(
+		"<span>text</span>\n",
+		toMarkdown('<span>text</span>'),
+	);
+});
+
+
+// Emoticons
+test('emoticons', function () {
+	$texy = new Texy\Texy;
+	$texy->allowedSyntax[Texy\Syntax::Emoticon] = true;
+	$ast = $texy->parse(':-)');
+	$texy->transform($ast);
+	$generator = new Renderer;
+	Assert::same(
+		"🙂\n",
+		$generator->render($ast),
+	);
+});
+
+
+// URL scheme filtering (security)
+test('UrlPolicy filters dangerous schemes', function () {
+	$texy = new Texy\Texy;
+	Texy\Configurator::safeMode($texy);
+	$ast = $texy->parse('"click":javascript:evil and "ok":https://example.com');
+	$texy->transform($ast);
+	$generator = new Renderer($texy->urlPolicy);
+	Assert::same(
+		"click and [ok](https://example.com)\n",
+		$generator->render($ast),
+	);
+});
+
+
+test('without UrlPolicy no scheme filtering happens', function () {
+	$texy = new Texy\Texy;
+	$ast = $texy->parse('"click":javascript:evil');
+	$texy->transform($ast);
+	$generator = new Renderer;
+	Assert::same(
+		"[click](javascript:evil)\n",
+		$generator->render($ast),
+	);
+});
+
+
+test('UrlPolicy filters dangerous image schemes and leaves the escaped alternative text', function () {
+	$texy = new Texy\Texy;
+	$texy->urlPolicy->imagePattern = '~https?:~A';
+	$texy->config->addImageDefinition('x', 'javascript:alert(1)', alt: 'Logo <b>');
+	$ast = $texy->parse('a [*x*] b and [* http://x.cz/a.jpg *]');
+	$texy->transform($ast);
+	$generator = new Renderer($texy->urlPolicy);
+	Assert::same(
+		"a Logo \\<b\\> b and ![](http://x.cz/a.jpg)\n",
+		$generator->render($ast),
+	);
+});
+
+
+test('without UrlPolicy no image scheme filtering happens', function () {
+	$texy = new Texy\Texy;
+	$ast = $texy->parse('a [* javascript:evil *] b');
+	$texy->transform($ast);
+	$generator = new Renderer;
+	Assert::same(
+		"a ![](javascript:evil) b\n",
+		$generator->render($ast),
+	);
+});
+
+
+test('image node without URL renders as its alternative text', function () {
+	$texy = new Texy\Texy;
+	$texy->addInlineSyntax('myimage', '~@@~', fn() => new Texy\Nodes\ImageNode(alt: 'Logo'));
+	$ast = $texy->parse('a @@ b');
+	$texy->transform($ast);
+	$generator = new Renderer;
+	Assert::same(
+		"a Logo b\n",
+		$generator->render($ast),
+	);
+});
+
+
+test('a printed document reads back as it was', function () {
+	$markdown = Markdown::gfm();
+	$roundTrip = function (string $source, ?Renderer $renderer = null) use ($markdown): void {
+		$printed = ($renderer ?? new Renderer)->render($markdown->parse($source));
+		Assert::same($markdown->toHtml($source), $markdown->toHtml($printed), $printed);
+	};
+
+	$roundTrip("````\n```\na\n```\n````\n");
+	$roundTrip("~~~\na\n~~~\n");
+	$roundTrip("```\n```\n");
+	$roundTrip("# a #\n\n# \\#\n");
+	$reference = new Renderer;
+	$reference->linkStyle = LinkStyle::Reference;
+	$roundTrip("[a](/my%20url \"t\") [b]()\n", $reference);
+	Assert::contains('href="/my%20url"', $markdown->toHtml($reference->render($markdown->parse('[a](</my url>)'))));
+});
+
+
+test('a heading of several lines is one line in ATX', function () {
+	Assert::same("# a b\n", (new Renderer)->render((new Markdown)->parse("a\nb\n===")));
+});
+
+
+test('items, rows and cells go through the renderers', function () {
+	$renderer = new Renderer;
+	$renderer->addRenderer(fn(Texy\Nodes\ListItemNode $node, Renderer $renderer, Closure $next) => strtoupper($next($node)));
+	$renderer->addRenderer(fn(Texy\Nodes\TableCellNode $node, Renderer $renderer, Closure $next) => strtoupper($next($node)));
+	$document = Markdown::gfm()->parse("1. a\n2. b\n\n| c |\n| - |\n| d |\n");
+
+	Assert::same("1. A\n2. B\n\n| C |\n| --- |\n| D |\n", $renderer->render($document));
+});
+
+
+test('a definition list keeps Markdown between its tags', function () {
+	$texy = new Texy\Texy;
+	$document = $texy->parse("Term *x*:\n\t- definition **y**\n");
+	$printed = (new Renderer)->render($texy->transform($document));
+
+	Assert::same("<dl>\n<dt>\n\nTerm *x*\n\n</dt>\n<dd>\n\ndefinition **y**\n\n</dd>\n</dl>\n", $printed);
+	Assert::match('%A%<p>Term <em>x</em></p>%A%<p>definition <strong>y</strong></p>%A%', (new Markdown)->toHtml($printed));
+});

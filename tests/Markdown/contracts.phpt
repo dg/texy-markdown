@@ -7,8 +7,9 @@
 use Tester\Assert;
 use Texy\{InvalidArgumentException, InvalidInputException};
 use Texy\Markdown\Markdown;
+use Texy\Markdown\Output\Markdown\Renderer;
 use Texy\Markdown\Syntax;
-use Texy\Nodes\{CodeBlockNode, DocumentNode, ListItemNode, PhraseNode, TextNode};
+use Texy\Nodes\{CodeBlockNode, ContentNode, DocumentNode, ItemParagraphs, ListItemNode, ListNode, ParagraphNode, PhraseNode, TextNode};
 use Texy\Output\Text\Renderer as TextRenderer;
 use Texy\Parsing\ParseContext;
 use Texy\{Stage, Texy};
@@ -81,6 +82,11 @@ test('the map of syntaxes is complete and checked', function () {
 
 	$markdown->allowedSyntax['imag'] = false;
 	Assert::exception(fn() => $markdown->parse('a'), InvalidArgumentException::class, "Unknown syntax 'imag', did you mean 'image'?");
+	Assert::exception(
+		fn() => $markdown->readsAsBlock('a'),
+		InvalidArgumentException::class,
+		"Unknown syntax 'imag', did you mean 'image'?",
+	);
 });
 
 
@@ -125,6 +131,24 @@ test('a reference defined after its use is resolved, an unknown one stays text',
 });
 
 
+test('a list in the Markdown output', function () {
+	$list = fn(ItemParagraphs $paragraphs, array $items) => new DocumentNode(new ContentNode(
+		[new ListNode($items, paragraphs: $paragraphs)],
+	));
+	$item = fn(?bool $checked = null, string ...$texts) => new ListItemNode(new ContentNode(array_map(
+		fn($text) => new ParagraphNode(new ContentNode([new TextNode($text)])),
+		$texts,
+	)), checked: $checked);
+
+	$render = fn(DocumentNode $document) => (new Renderer)->render($document);
+	Assert::same("- a\n- b\n", $render($list(ItemParagraphs::Unwrapped, [$item(null, 'a'), $item(null, 'b')])));
+	Assert::same("- a\n\n- b\n", $render($list(ItemParagraphs::Wrapped, [$item(null, 'a'), $item(null, 'b')])));
+	Assert::same("- a\n- b\n", $render($list(ItemParagraphs::FirstUnwrapped, [$item(null, 'a'), $item(null, 'b')])));
+	Assert::same("- a\n\n  b\n", $render($list(ItemParagraphs::FirstUnwrapped, [$item(null, 'a', 'b')])));
+	Assert::same("- [x] a\n- [ ] b\n", $render($list(ItemParagraphs::Unwrapped, [$item(true, 'a'), $item(false, 'b')])));
+});
+
+
 test('a task keeps its state on the way through the outputs', function () {
 	$markdown = Markdown::gfm();
 	$document = $markdown->parse("- [x] a\n- [ ] b\n");
@@ -133,4 +157,5 @@ test('a task keeps its state on the way through the outputs', function () {
 	Assert::false($items[1]->checked);
 
 	Assert::same("[x] a\n[ ] b\n", (new TextRenderer)->render($document));
+	Assert::same("- [x] a\n- [ ] b\n", (new Renderer)->render($document));
 });

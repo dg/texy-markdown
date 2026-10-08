@@ -159,7 +159,9 @@ test('the source of an HTML block and its markup', function () {
 });
 
 
-test('raw HTML is printed to plain text', function () {
+test('raw HTML is printed to Markdown and plain text', function () {
 	$markdown = new Markdown;
+
+	Assert::same("<div>\na\n</div>\n", new Texy\Markdown\Output\Markdown\Renderer()->render($markdown->parse("<div>\na\n</div>\n")));
 	Assert::same("a y z\n", new TextRenderer()->render($markdown->parse('a <b class="x">y</b> z')));
 });

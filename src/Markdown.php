@@ -194,6 +194,18 @@ final class Markdown
 
 
 	/**
+	 * Would a block syntax take the text, or a part of it, where a paragraph is meant? Only its
+	 * pattern decides, since whether its handler refuses the text can depend on the neighbours.
+	 * Indented code and link reference definitions have no pattern, they are found between them.
+	 */
+	public function readsAsBlock(string $text): bool
+	{
+		$this->allowedSyntax = $this->engine->completeAllowed($this->allowedSyntax);
+		return $this->engine->matchesBlockSyntax(self::normalize($text), $this->allowedSyntax);
+	}
+
+
+	/**
 	 * Registers a pass: fn(Nodes\DocumentNode): void, called with the whole document
 	 * after the built-in passes of its stage. The AST may be freely modified there.
 	 * A Transform pass (the default) runs in transform(), a Syntax pass already in parse().
