@@ -3,3 +3,13 @@ parameters:
 
 	paths:
 		- src
+
+	ignoreErrors:
+		# Link references are filled by addLinkReference() during renderNode(), which
+		# dispatches through handler closures. PHPStan cannot follow that indirection,
+		# so it still sees the empty array assigned at the top of render().
+		-
+			identifier: if.alwaysFalse
+			message: '#^If condition is always false\.$#'
+			count: 1
+			path: src/Output/Markdown/Renderer.php

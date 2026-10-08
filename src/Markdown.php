@@ -179,6 +179,18 @@ final class Markdown
 
 
 	/**
+	 * Would a block syntax take the text, or a part of it, where a paragraph is meant? Only its
+	 * pattern decides, since whether its handler refuses the text can depend on the neighbours.
+	 * Indented code and link reference definitions have no pattern, they are found between them.
+	 */
+	public function readsAsBlock(string $text): bool
+	{
+		$this->allowedSyntax = $this->engine->completeAllowed($this->allowedSyntax);
+		return $this->engine->matchesBlockSyntax(self::normalize($text), $this->allowedSyntax);
+	}
+
+
+	/**
 	 * Input normalization. Unlike Texy::normalize() it does not right-trim lines, as two trailing
 	 * spaces are a hard break. NUL becomes U+FFFD, other control characters except tab, newline
 	 * and form feed are removed, the lazy continuation marker with them.
