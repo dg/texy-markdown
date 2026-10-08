@@ -4,10 +4,10 @@ It is my fervent wish that this file guide every AI coding agent working with co
 
 ## Project Overview
 
-`texy/markdown` gives Texy the Markdown language: it parses CommonMark and GitHub
-Flavored Markdown into a standard **Texy AST**. HTML output is Texy's job - the AST goes
-through Texy's own renderer, so a Markdown document gets typography, sanitization and
-well-forming for free.
+`texy/markdown` gives Texy the Markdown language in both directions: it parses
+CommonMark and GitHub Flavored Markdown into a standard **Texy AST**, and it renders a
+Texy AST back to Markdown. HTML output is Texy's job - the AST goes through Texy's own
+renderer, so a Markdown document gets typography, sanitization and well-forming for free.
 
 - **PHP Version**: 8.2 - 8.6
 - **Package**: `texy/markdown`, namespace `Texy\Markdown`

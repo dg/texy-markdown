@@ -6,12 +6,14 @@ Texy Markdown
 [![Latest Stable Version](https://poser.pugx.org/texy/markdown/v/stable)](https://github.com/dg/texy-markdown/releases)
 [![License](https://img.shields.io/badge/license-New%20BSD-blue.svg)](https://github.com/dg/texy-markdown/blob/master/license.md)
 
-Markdown for [Texy](https://texy.deegee.dev). It parses CommonMark and GitHub
-Flavored Markdown into a standard **Texy AST**.
+Markdown for [Texy](https://texy.deegee.dev), in both directions. It parses CommonMark
+and GitHub Flavored Markdown into a standard **Texy AST**, and it renders a Texy AST
+back to Markdown.
 
 The AST is the point. Markdown and Texy become two front ends to one tree, so a
 Markdown document goes out through Texy's own renderer and gets typography, HTML
-sanitization and well-forming for free.
+sanitization and well-forming for free - and converting between the two languages is
+just a matter of which parser and which renderer you pick.
 
 Install via Composer:
 
@@ -44,6 +46,13 @@ The parsed document is an ordinary Texy AST, so `NodeHelpers`, `NodeTraverser`,
 transform passes and every Texy renderer work on it:
 
     $document = $markdown->parse($text);
+
+And the other direction, a Texy AST rendered as Markdown:
+
+    $renderer = new Texy\Markdown\Output\Renderer;
+    $document = $texy->parse($texySource);
+    $texy->transform($document);
+    $markdownText = $renderer->render($document);
 
 
 [Support Me](https://github.com/sponsors/dg)

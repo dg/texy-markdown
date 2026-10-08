@@ -13,3 +13,12 @@ parameters:
 			message: '#^Method Texy\\Markdown\\Registry\:\:add(Line|Block)\(\) has parameter \$handler with no signature specified for callable\.$#'
 			count: 2
 			path: src/Registry.php
+
+		# Link references are filled by addLinkReference() during renderNode(), which
+		# dispatches through handler closures. PHPStan cannot follow that indirection,
+		# so it still sees the empty array assigned at the top of render().
+		-
+			identifier: if.alwaysFalse
+			message: '#^If condition is always false\.$#'
+			count: 1
+			path: src/Output/Renderer.php
