@@ -2,6 +2,13 @@
 
 It is my fervent wish that this file guide every AI coding agent working with code in this repository.
 
+## Documentation
+
+Any distilled, agent-facing documentation for this package - how it works internally
+and the rationale behind key design decisions - lives in `docs/`. Consult it before
+non-trivial changes; it is the source of truth from which the public manual is
+distilled.
+
 ## Project Overview
 
 `texy/markdown` gives Texy the Markdown language in both directions: it parses
@@ -52,7 +59,8 @@ before the 1.0 release**: drop the `repositories` entry and tighten the constrai
   AST `parse()` returns (guarded by `nodes-parse-time-only.phpt`).
 - **Every range points into the source**, inside containers too: a container parses its
   stripped content with local offsets and maps the result with an `OffsetMap` of its
-  lines, after it is done with the local ranges (`range-invariants.phpt`).
+  lines, after it is done with the local ranges (`range-invariants.phpt`, see
+  `docs/internals.md`).
 - **Registration order is collision-resolution order.** When two patterns match at the
   same offset with the same length, the one registered first wins - see the comment on
   `Markdown::createSyntaxes()` before reordering anything there.

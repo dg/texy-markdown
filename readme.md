@@ -55,6 +55,12 @@ And the other direction, a Texy AST rendered as Markdown:
     $markdownText = $renderer->render($document);
 
 
+Documentation
+-------------
+
+The [docs/](docs/) directory holds the reference for using and extending this package.
+
+
 [Support Me](https://github.com/sponsors/dg)
 --------------------------------------------
 
