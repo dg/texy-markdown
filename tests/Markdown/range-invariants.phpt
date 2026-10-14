@@ -31,6 +31,13 @@ function check(Node $node, ?Range $parent, int $length, string $path = ''): arra
 		$errors[] = "$path [$range->offset, $range->length] lies outside its parent";
 	}
 
+	foreach (['textRange', 'urlRange', 'bulletRange'] as $name) {
+		$part = $node->$name ?? null;
+		if ($part instanceof Range && $range !== null && !contains($range, $part)) {
+			$errors[] = "$path::\$$name lies outside the node";
+		}
+	}
+
 	$previousEnd = null;
 	foreach ($node->getChildren() as $child) {
 		if ($node instanceof Nodes\ContentNode && $child->range !== null) {

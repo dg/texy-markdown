@@ -75,7 +75,7 @@ final class Lists implements SyntaxRegistrar
 		}
 
 		$parser->moveBackward();
-		$items = $starts = $ends = [];
+		$items = $bullets = $ends = [];
 		$current = null;
 		$contentIndent = 0;
 		$blanks = 0;
@@ -139,7 +139,7 @@ final class Lists implements SyntaxRegistrar
 
 				// spaces standing in for a tab or added for a code block make the content longer than its source
 				$current = [['content' => $rest, 'offset' => max($lineOffset + $width, $lineOffset + strlen($l) - strlen($rest))]];
-				$starts[] = $lineOffset + strlen($marker[1]);
+				$bullets[] = [$marker[2], new Range($lineOffset + strlen($marker[1]), strlen($marker[2]))];
 				$state = new LineState;
 				$state->feed($rest);
 				$startedBlank = false;
@@ -193,9 +193,12 @@ final class Lists implements SyntaxRegistrar
 			$content = $ctx->parseBlock($text);
 			$loose = $loose || self::isLoose($text, $content);
 			OffsetMap::fromLines($lines)->applyTo($content);
+			[$bullet, $bulletRange] = $bullets[$i];
 			$itemNodes[] = new Nodes\ListItemNode(
 				$content,
-				range: new Range($starts[$i], $ends[$i] - $starts[$i]),
+				range: new Range($bulletRange->offset, $ends[$i] - $bulletRange->offset),
+				bullet: $bullet,
+				bulletRange: $bulletRange,
 			);
 		}
 

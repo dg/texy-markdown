@@ -57,12 +57,15 @@ final class AtxHeading implements SyntaxRegistrar
 			$content = rtrim($trailing[1]); // closing sequence of hashes
 		}
 
+		$contentOffset = $offsets[2] ?? $offsets[0];
 		return new Nodes\HeadingNode(
-			DeferredNode::wrap($content, $offsets[2] ?? $offsets[0]),
+			DeferredNode::wrap($content, $contentOffset),
 			strlen($m[1]),
 			Nodes\HeadingType::Surrounded,
 			null,
 			new Range($offsets[0], strlen($m[0])),
+			$m[1],
+			new Range($contentOffset, strlen($content)),
 		);
 	}
 }

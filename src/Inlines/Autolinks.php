@@ -50,9 +50,9 @@ final class Autolinks implements SyntaxRegistrar
 	 * @param  array{string, string}  $m
 	 * @param  array{int, int}  $offsets
 	 */
-	private function parseUrl(ParseContext $ctx, array $m, array $offsets): Nodes\InlineNode
+	private function parseUrl(ParseContext $ctx, array $m, array $offsets, string $name): Nodes\InlineNode
 	{
-		return self::link($m[1], $m[1], $offsets[0], strlen($m[0]));
+		return self::link($m[1], $m, $offsets, $name);
 	}
 
 
@@ -60,18 +60,27 @@ final class Autolinks implements SyntaxRegistrar
 	 * @param  array{string, string}  $m
 	 * @param  array{int, int}  $offsets
 	 */
-	private function parseEmail(ParseContext $ctx, array $m, array $offsets): Nodes\InlineNode
+	private function parseEmail(ParseContext $ctx, array $m, array $offsets, string $name): Nodes\InlineNode
 	{
-		return self::link('mailto:' . $m[1], $m[1], $offsets[0], strlen($m[0]));
+		return self::link('mailto:' . $m[1], $m, $offsets, $name);
 	}
 
 
-	private static function link(string $url, string $label, int $offset, int $length): Nodes\LinkNode
+	/**
+	 * The address between the pointy brackets is both the text and the target.
+	 * @param  array{string, string}  $m
+	 * @param  array{int, int}  $offsets
+	 */
+	private static function link(string $url, array $m, array $offsets, string $name): Nodes\LinkNode
 	{
+		$address = new Range($offsets[1], strlen($m[1]));
 		return new Nodes\LinkNode(
 			$url,
-			new Nodes\ContentNode([new Nodes\TextNode($label)]),
-			range: new Range($offset, $length),
+			new Nodes\ContentNode([new Nodes\TextNode($m[1], $address)]),
+			range: new Range($offsets[0], strlen($m[0])),
+			syntax: $name,
+			textRange: $address,
+			urlRange: $address,
 		);
 	}
 }

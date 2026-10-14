@@ -74,6 +74,7 @@ final class Links implements SyntaxRegistrar
 				$ctx->parseInline($label, $offsets['brk'] + 1),
 				Escaping::cleanTitle($m['ttl']),
 				$range,
+				self::locateTarget($m, $offsets),
 			);
 		}
 
@@ -85,6 +86,7 @@ final class Links implements SyntaxRegistrar
 				$ctx->parseInline($label, $offsets['brk'] + 1),
 				$definition['title'],
 				$range,
+				self::locateTarget($m, $offsets),
 			);
 	}
 
@@ -108,12 +110,16 @@ final class Links implements SyntaxRegistrar
 		}
 
 		$range = new Range($offsets[0], strlen($m[0]));
+		$textRange = new Range($offsets['brk'] + 1, strlen($label));
 		if ($m['inl'] !== null) {
 			return new Nodes\LinkNode(
 				Escaping::cleanDestination($m['dest'] ?? ''),
 				$content,
 				Titles::forLink(Escaping::cleanTitle($m['ttl'])),
 				$range,
+				syntax: Syntax::Link,
+				textRange: $textRange,
+				urlRange: self::locateTarget($m, $offsets),
 			);
 		}
 
@@ -125,18 +131,42 @@ final class Links implements SyntaxRegistrar
 				$content,
 				Titles::forLink($definition['title']),
 				$range,
+				ref: self::getReference($m['ref'], $label),
+				syntax: Syntax::Link,
+				textRange: $textRange,
+				urlRange: self::locateTarget($m, $offsets),
 			);
 	}
 
 
-	/**
-	 * A full reference uses its own label, a collapsed or shortcut one the link text.
-	 * @return ?array{url: string, title: ?string}
-	 */
+	/** @return ?array{url: string, title: ?string} */
 	private function resolve(?string $ref, string $label): ?array
 	{
-		return $this->state->findDefinition(
-			$ref !== null && $ref !== '' && $ref !== '[]' ? substr($ref, 1, -1) : $label,
-		);
+		return $this->state->findDefinition(self::getReference($ref, $label));
+	}
+
+
+	/**
+	 * The label a reference is looked up by: a full reference uses its own, a collapsed
+	 * or shortcut one the link text.
+	 */
+	private static function getReference(?string $ref, string $label): string
+	{
+		return $ref !== null && $ref !== '' && $ref !== '[]' ? substr($ref, 1, -1) : $label;
+	}
+
+
+	/**
+	 * Where the target is written: the destination, the label of a full reference, or the text.
+	 * @param  array{0: string, brk: string, inl: ?string, dest: ?string, ttl: ?string, ref: ?string, ...}  $m
+	 * @param  array{0: int, brk: int, ...}  $offsets
+	 */
+	private static function locateTarget(array $m, array $offsets): Range
+	{
+		return match (true) {
+			$m['inl'] !== null => new Range($offsets['dest'] ?? $offsets[0], strlen($m['dest'] ?? '')),
+			$m['ref'] !== null && strlen($m['ref']) > 2 => new Range(($offsets['ref'] ?? $offsets[0]) + 1, strlen($m['ref']) - 2),
+			default => new Range($offsets['brk'] + 1, strlen($m['brk']) - 2),
+		};
 	}
 }

@@ -121,10 +121,14 @@ final class ExtendedAutolinks implements SyntaxRegistrar
 
 	private static function link(string $url, string $label, int $offset): Nodes\LinkNode
 	{
+		$range = new Range($offset, strlen($label));
 		return new Nodes\LinkNode(
 			$url,
-			new Nodes\ContentNode([new Nodes\TextNode($label)]),
-			range: new Range($offset, strlen($label)),
+			new Nodes\ContentNode([new Nodes\TextNode($label, $range)]),
+			range: $range,
+			syntax: Syntax::AutolinkExtended,
+			textRange: $range,
+			urlRange: $range,
 		);
 	}
 }
