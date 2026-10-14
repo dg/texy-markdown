@@ -75,7 +75,7 @@ final class AutolinkModule extends Texy\Module
 	 */
 	private function parseUrl(ParseContext $ctx, array $m, array $offsets): Nodes\InlineNode
 	{
-		return self::createLink($m[1], $m[1], $offsets[0], strlen($m[0]));
+		return self::createLink($m[1], $m, $offsets, Syntax::Autolink);
 	}
 
 
@@ -85,16 +85,25 @@ final class AutolinkModule extends Texy\Module
 	 */
 	private function parseEmail(ParseContext $ctx, array $m, array $offsets): Nodes\InlineNode
 	{
-		return self::createLink('mailto:' . $m[1], $m[1], $offsets[0], strlen($m[0]));
+		return self::createLink('mailto:' . $m[1], $m, $offsets, Syntax::AutolinkEmail);
 	}
 
 
-	private static function createLink(string $url, string $label, int $offset, int $length): Nodes\LinkNode
+	/**
+	 * The address between the pointy brackets is both the text and the target.
+	 * @param  array{string, string}  $m
+	 * @param  array{int, int}  $offsets
+	 */
+	private static function createLink(string $url, array $m, array $offsets, string $name): Nodes\LinkNode
 	{
+		$address = new Range($offsets[1], strlen($m[1]));
 		return new Nodes\LinkNode(
 			$url,
-			new Nodes\ContentNode([new Nodes\TextNode($label)]),
-			range: new Range($offset, $length),
+			new Nodes\ContentNode([new Nodes\TextNode($m[1], $address)]),
+			range: new Range($offsets[0], strlen($m[0])),
+			syntax: $name,
+			textRange: $address,
+			urlRange: $address,
 		);
 	}
 
@@ -160,10 +169,14 @@ final class AutolinkModule extends Texy\Module
 
 	private static function createExtendedLink(string $url, string $label, int $offset): Nodes\LinkNode
 	{
+		$range = new Range($offset, strlen($label));
 		return new Nodes\LinkNode(
 			$url,
-			new Nodes\ContentNode([new Nodes\TextNode($label)]),
-			range: new Range($offset, strlen($label)),
+			new Nodes\ContentNode([new Nodes\TextNode($label, $range)]),
+			range: $range,
+			syntax: Syntax::AutolinkExtended,
+			textRange: $range,
+			urlRange: $range,
 		);
 	}
 }

@@ -65,12 +65,15 @@ final class HeadingModule extends Texy\Module
 			$content = $bare;
 		}
 
+		$contentOffset = $content === '' ? $offsets[0] : $offsets[2];
 		return new Nodes\HeadingNode(
-			$ctx->parseInline($content, $content === '' ? $offsets[0] : $offsets[2]),
+			$ctx->parseInline($content, $contentOffset),
 			strlen($m[1]),
 			Nodes\HeadingType::Surrounded,
 			null,
 			new Range($offsets[0], strlen($m[0])),
+			$m[1],
+			new Range($contentOffset, strlen($content)),
 		);
 	}
 
@@ -94,12 +97,15 @@ final class HeadingModule extends Texy\Module
 			$offset += strlen($line) + 1;
 		}
 
+		$textOffset = $offsets[1] + strspn($m[1], " \t");
 		return new Nodes\HeadingNode(
 			new Nodes\ContentNode([$deferred]),
 			$m[2][0] === '=' ? 1 : 2,
 			Nodes\HeadingType::Underlined,
 			null,
 			new Range($offsets[0], strlen($m[0])),
+			$m[2][0],
+			new Range($textOffset, $offsets[1] + strlen(rtrim($m[1])) - $textOffset),
 		);
 	}
 }

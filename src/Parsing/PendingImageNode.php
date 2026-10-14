@@ -22,6 +22,7 @@ class PendingImageNode extends Nodes\InlineNode
 		public Nodes\ContentNode $alt,
 		public ?string $title = null,
 		public ?Range $range = null,
+		public ?Range $urlRange = null,
 	) {
 	}
 

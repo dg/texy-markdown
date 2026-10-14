@@ -56,6 +56,7 @@ final class ImagePass
 			alt: self::plainText($image->alt),
 			modifier: Titles::forImage($image->title),
 			range: $image->range,
+			urlRange: $image->urlRange,
 		);
 	}
 
