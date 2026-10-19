@@ -54,6 +54,10 @@ And the other direction, a Texy AST rendered as Markdown:
     $texy->transform($document);
     $markdownText = $renderer->render($document);
 
+And Markdown converted to Texy source:
+
+    $texySource = $markdown->toTexy($text);
+
 
 Documentation
 -------------

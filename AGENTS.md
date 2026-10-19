@@ -15,6 +15,7 @@ distilled.
 CommonMark and GitHub Flavored Markdown into a standard **Texy AST**, and it renders a
 Texy AST back to Markdown. HTML output is Texy's job - the AST goes through Texy's own
 renderer, so a Markdown document gets typography, sanitization and well-forming for free.
+`Markdown::toTexy()` prints a Markdown document as Texy source through Texy's printer.
 
 - **PHP Version**: 8.2 - 8.6
 - **Package**: `texy/markdown`, namespace `Texy\Markdown`

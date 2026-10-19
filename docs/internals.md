@@ -148,6 +148,29 @@ exactly in whether items keep their paragraphs; the core list renderer drops the
 item's paragraph, which is right for Texy — an item is a block container in its own
 right — but would make every loose list look tight here.
 
+## Converting to Texy
+
+`Output\TexyConverter` prints the syntax tree with Texy's printer
+(`Texy\Output\Texy\Renderer`), which writes a node in the variant of its notation the node
+records. The variants recorded here are Markdown's and mean something else in Texy (`##`
+is not a second-level heading there, a bare `1.` list needs two items, `[text](url)`
+drops a title), so the converter first **drops them** and lets the printer write Texy's
+canonical notation. A heading level becomes the level Texy counts from the notation:
+0–3 for the underline characters `#` `*` `=` `-`, then the surrounded `###` and `##`.
+
+The printer escapes text only where Texy itself wrote it escaped, which tells nothing
+about Markdown text. **Text is escaped by reading it back:** Texy parses each text, and
+the first character of whatever it finds there besides plain text and autolinks becomes
+an entity, until it finds nothing; `*` becomes `\*`. A text alone cannot see its
+neighbours (a `*` next to `**strong**`), so every paragraph and heading is read back as a
+whole and compared by its plain text; where it differs, it is printed again with every
+character escaped that Texy syntax could start with.
+
+What Texy has no notation for is written as HTML (strikethrough, an emphasis nested in
+the same one, a code span with a backtick or edge spaces), an HTML block as `/--html`.
+A soft break is a newline; where a default Texy would read the next line as a block, the
+printer makes it a space.
+
 ## The compliance suites
 
 `tests/SpecRenderer.php` renders byte-identically to the reference implementation and
