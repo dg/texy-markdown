@@ -92,6 +92,23 @@ What GFM has no notation for is written as HTML. A definition list keeps a blank
 each of its tags, so the Markdown between them is still read; a table with merged cells or a
 caption holds plain text in its cells.
 
+## Texy
+
+Markdown converts to Texy source:
+
+```php
+$texySource = $markdown->toTexy($text);
+```
+
+The result is written in Texy's own notation, not in Markdown's: `*em*` becomes
+`//em//`, a link `"text":url`, headings are underlined. Text that Texy would read as
+syntax is escaped with entities, and what Texy writes no notation for comes out as HTML:
+strikethrough as `<del>` (off in Texy by default), an emphasis nested in an emphasis as
+`<em>`, a link that the text after it would run into and whose text, target or title
+`[text](url)` cannot hold as `<a>`, an HTML block as `/--html`. Read by a default
+`Texy`, the result says what the Markdown said, as far as Texy can say it: a list
+numbered above 999 or a list item starting empty does not become a list.
+
 ## Switching syntaxes on and off
 
 Every construct is a named syntax in `$allowedSyntax`, the same idiom as `Texy::$allowedSyntax`:

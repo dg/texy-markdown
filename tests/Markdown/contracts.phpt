@@ -8,6 +8,7 @@ use Tester\Assert;
 use Texy\{InvalidArgumentException, InvalidInputException};
 use Texy\Markdown\Markdown;
 use Texy\Markdown\Output\Markdown\Renderer;
+use Texy\Markdown\Output\Texy\Converter;
 use Texy\Markdown\Syntax;
 use Texy\Nodes\{CodeBlockNode, ContentNode, DocumentNode, ItemParagraphs, ListItemNode, ListNode, ParagraphNode, PhraseNode, TextNode};
 use Texy\Output\Text\Renderer as TextRenderer;
@@ -157,5 +158,16 @@ test('a task keeps its state on the way through the outputs', function () {
 	Assert::false($items[1]->checked);
 
 	Assert::same("[x] a\n[ ] b\n", (new TextRenderer)->render($document));
+	Assert::same("- [x] a\n- [ ] b\n", $markdown->toTexy("- [x] a\n- [ ] b\n"));
 	Assert::same("- [x] a\n- [ ] b\n", (new Renderer)->render($document));
+});
+
+
+test('the conversion to Texy leaves the given document as it is', function () {
+	$markdown = new Markdown;
+	$document = $markdown->parse("# a *b*\n\n- c\n");
+	$before = serialize($document);
+
+	(new Converter)->convert($document);
+	Assert::same($before, serialize($document));
 });

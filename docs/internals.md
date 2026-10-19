@@ -172,6 +172,29 @@ like something to simplify:
 
 Blocks nest to `Texy\Parsing\ParseContext::MaxDepth` levels; deeper content is a paragraph.
 
+## Converting to Texy
+
+`Output\Texy\Converter` prints a clone of the syntax tree with Texy's printer
+(`Texy\Output\Texy\Renderer`), which writes a node in the variant of its notation the node
+records. The variants recorded here are Markdown's and mean something else in Texy (`##`
+is not a second-level heading there, a bare `1.` list needs two items, `[text](url)`
+drops a title), so the converter first **drops them** and lets the printer write Texy's
+canonical notation. A heading level stays absolute: levels 1–4 are underlined, 5 and 6
+surrounded.
+
+The printer prints a text with a position as it was written in Texy, which tells nothing
+about Markdown text, so the converter **drops the positions of texts** too. A text
+without one the printer reads back: the first character of whatever Texy finds in it
+besides plain text and autolinks becomes an entity, until it finds nothing, and a
+paragraph or heading whose text reads back differently is printed again with every
+character escaped that Texy syntax could start with.
+
+What Texy has no notation for is written as HTML (strikethrough, an emphasis nested in
+the same one, a code span with a backtick or edge spaces, a link the text after it would
+run into where `[text](url)` cannot hold its text, target or title), an HTML block as `/--html`.
+A soft break is a newline; where a default Texy would read the next line as a block, the
+printer makes it a space.
+
 ## The compliance suites
 
 `tests/SpecRenderer.php` renders byte-identically to the reference implementation and

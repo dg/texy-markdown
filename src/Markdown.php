@@ -155,6 +155,15 @@ final class Markdown
 
 
 	/**
+	 * Converts Markdown to Texy.
+	 */
+	public function toTexy(string $text): string
+	{
+		return (new Output\Texy\Converter)->convert($this->parse($text));
+	}
+
+
+	/**
 	 * Parses Markdown into the syntax tree, a Texy AST whose nodes record where they
 	 * are written. Inline content is parsed already; see transform() for the rest.
 	 */
