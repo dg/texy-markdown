@@ -34,6 +34,17 @@ final class Helpers
 
 
 	/**
+	 * A line written so that it cannot start a block: its first punctuation after the indentation
+	 * and the digits of a list number is escaped. Null where it has none there.
+	 */
+	public static function escapeBlockStart(string $line): ?string
+	{
+		$escaped = preg_replace('/^[ \t]*\d*\K(?=[!-\/:-@[-`{-~])/', '\\\\', $line, 1, $count);
+		return $count > 0 ? $escaped : null;
+	}
+
+
+	/**
 	 * Code span. Its content is literal, so instead of escaping it is delimited by a backtick
 	 * run longer than any inside; a space keeps a leading or trailing backtick apart from it.
 	 */

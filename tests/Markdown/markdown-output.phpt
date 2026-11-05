@@ -304,6 +304,64 @@ test('line break', function () {
 });
 
 
+// A paragraph that would read as another block
+test('a line of a paragraph that would start a block is escaped', function () {
+	$paragraph = fn(Texy\Nodes\InlineNode ...$children) => new Texy\Nodes\DocumentNode(new Texy\Nodes\ContentNode([
+		new Texy\Nodes\ParagraphNode(new Texy\Nodes\ContentNode($children)),
+	]));
+	$text = fn(string $text) => new Texy\Nodes\TextNode($text);
+	$cases = [
+		"\\- foo\n" => $paragraph($text('- foo')),
+		"1\\. foo\n" => $paragraph($text('1. foo')),
+		"\\# foo\n" => $paragraph($text('# foo')),
+		"\\---\n" => $paragraph($text('---')),
+		"code\n" => $paragraph($text('    code')),
+		"2.5 million\n" => $paragraph($text('2.5 million')),
+		"foo\n\\- bar\n" => $paragraph($text("foo\n- bar")),
+		"foo\n  \\- bar\n" => $paragraph($text("foo\n  - bar")),
+		"foo\n\\===\n" => $paragraph($text("foo\n===")),
+		"foo  \n\\- bar\n" => $paragraph($text('foo'), new Texy\Nodes\LineBreakNode, $text('- bar')),
+		"foo <div>\n" => $paragraph($text("foo\n"), new Texy\Markdown\Nodes\RawInlineNode('<div>')),
+	];
+	foreach ($cases as $expected => $document) {
+		$printed = (new Renderer)->render($document);
+		Assert::same($expected, $printed);
+
+		$blocks = Markdown::gfm()->parse($printed)->content->children;
+		Assert::count(1, $blocks, $expected);
+		Assert::type(Texy\Nodes\ParagraphNode::class, $blocks[0], $expected);
+	}
+
+	$renderer = new Renderer;
+	$renderer->escapeSpecialChars = false;
+	Assert::same("- foo\n", $renderer->render($paragraph($text('- foo'))));
+});
+
+
+test('a paragraph starting with raw HTML that starts a block goes on with the next line, or is left as it is', function () {
+	$render = fn(string $html, string $text) => (new Renderer)->render(new Texy\Nodes\DocumentNode(new Texy\Nodes\ContentNode([
+		new Texy\Nodes\ParagraphNode(new Texy\Nodes\ContentNode([
+			new Texy\Markdown\Nodes\RawInlineNode($html),
+			new Texy\Nodes\TextNode($text),
+		])),
+	])));
+	Assert::same("<div>\n\\<font\\> a\n- b\n", $render('<div>', "\n<font> a\n- b"));
+
+	foreach (["<br> foo\n\\- bar\n" => "\nfoo\n- bar", "<br> - foo\nbar\n" => "\n- foo\nbar"] as $expected => $text) {
+		$printed = $render('<br>', $text);
+		Assert::same($expected, $printed);
+		Assert::type(Texy\Nodes\ParagraphNode::class, Markdown::gfm()->parse($printed)->content->children[0]);
+	}
+});
+
+
+test('a paragraph of a list item or a quote that would start a nested block is escaped', function () {
+	Assert::same("\\# foo\n", toMarkdown('&#35; foo'));
+	Assert::same("- \\# foo\n", toMarkdown('- &#35; foo'));
+	Assert::same("> \\# foo\n", toMarkdown('> &#35; foo'));
+});
+
+
 // Autolinks
 test('URL autolink', function () {
 	Assert::same(

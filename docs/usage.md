@@ -59,6 +59,10 @@ Its formatting is configurable through public properties on the renderer:
 `$orderedListDelimiter`, `$emphasisMarker`, `$strongMarker`, `$linkStyle`,
 `$horizontalRule`, `$escapeSpecialChars`, `$shortenUrls`.
 
+Unless `$escapeSpecialChars` is off, a paragraph never reads as another block: a line that
+a GFM parser would take for one (`Markdown::readsAsBlock()`) has its first punctuation
+escaped, `\- foo` or `1\. foo`.
+
 ## Texy
 
 Markdown converts to Texy source:

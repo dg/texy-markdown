@@ -8,6 +8,7 @@
 namespace Texy\Markdown\Output;
 
 use Texy\Helpers as TexyHelpers;
+use Texy\Markdown\Markdown;
 use Texy\Markdown\Nodes as MdNodes;
 use Texy\Node;
 use Texy\Nodes;
@@ -61,6 +62,9 @@ class Renderer extends NodeRenderer
 	private array $linkReferences = [];
 
 	private int $referenceCounter = 0;
+
+	/** reads the printed paragraphs back, as a GFM parser does */
+	private Markdown $reader;
 
 
 	public function __construct(
@@ -131,6 +135,7 @@ class Renderer extends NodeRenderer
 			Nodes\LinkDefinitionNode::class => fn() => '',
 			Nodes\CommentNode::class => fn() => '',
 		];
+		$this->reader = Markdown::gfm();
 	}
 
 
@@ -208,7 +213,46 @@ class Renderer extends NodeRenderer
 	private function renderParagraph(Nodes\ParagraphNode $node): string
 	{
 		$content = $this->renderNodes($node->content->children);
+		if ($this->escapeSpecialChars) {
+			$content = $this->ensureParagraph($content);
+		}
+
 		return $content === '' ? '' : $content . "\n";
+	}
+
+
+	/**
+	 * Text that Markdown reads as a paragraph. A line that would start a block is escaped;
+	 * raw HTML cannot be, so its line continues the previous one, or as the first line goes on
+	 * with the next one. The first line loses its indentation, which would make it code. Where
+	 * the text still reads as a block, as after a first line of raw HTML that starts one, it stays
+	 * as it was.
+	 */
+	private function ensureParagraph(string $text): string
+	{
+		$text = ltrim($text, " \t");
+		if (!$this->reader->readsAsBlock($text)) {
+			return $text;
+		}
+
+		$joined = preg_match('~\A<[^\n]*~', $text, $m) && $this->reader->readsAsBlock($m[0])
+			? preg_replace('~\n~', ' ', $text, 1)
+			: $text;
+
+		$res = '';
+		foreach (explode("\n", $joined) as $i => $line) {
+			$prefix = $i > 0 ? $res . "\n" : '';
+			if (!$this->reader->readsAsBlock($prefix . $line)) {
+				$res = $prefix . $line;
+				continue;
+			}
+
+			// text has its < escaped, so a line starting with one is raw HTML
+			$escaped = str_starts_with(ltrim($line), '<') ? null : Helpers::escapeBlockStart($line);
+			$res = $escaped === null && $i > 0 ? $res . ' ' . $line : $prefix . ($escaped ?? $line);
+		}
+
+		return $this->reader->readsAsBlock($res) ? $text : $res;
 	}
 
 
@@ -320,7 +364,7 @@ class Renderer extends NodeRenderer
 
 		// Simple case: single paragraph without nested blocks
 		if (count($children) === 1 && $children[0] instanceof Nodes\ParagraphNode) {
-			return trim($this->renderNodes($children[0]->content->children));
+			return trim($this->renderParagraph($children[0]));
 		}
 
 		// Complex case: multiple blocks or nested lists

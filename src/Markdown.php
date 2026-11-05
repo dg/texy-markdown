@@ -146,6 +146,17 @@ final class Markdown
 
 
 	/**
+	 * Would a block syntax take the text, or a part of it, where a paragraph is meant? Only its
+	 * pattern decides, since whether its handler refuses the text can depend on the neighbours.
+	 * Indented code and link reference definitions have no pattern, they are found between them.
+	 */
+	public function readsAsBlock(string $text): bool
+	{
+		return $this->registry->matchesBlockSyntax(self::normalize($text), $this->allowed);
+	}
+
+
+	/**
 	 * Turns the syntax tree into the document, in place: filters the raw HTML GFM
 	 * disallows, runs the consumer's passes and, when a Texy is given, its typography.
 	 * A document is transformed only once.

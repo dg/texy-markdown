@@ -88,6 +88,16 @@ final class Registry
 
 
 	/**
+	 * Does the pattern of an allowed block syntax match the text?
+	 * @param  array<string, bool>  $allowed
+	 */
+	public function matchesBlockSyntax(string $text, array $allowed): bool
+	{
+		return $this->engine->matchesBlockSyntax($text, array_intersect_key($allowed, $this->blockNames));
+	}
+
+
+	/**
 	 * A context for the inline phase, which runs as a pass inside parse().
 	 * @param  array<string, bool>  $allowed
 	 */
