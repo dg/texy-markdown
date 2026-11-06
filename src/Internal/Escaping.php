@@ -24,11 +24,18 @@ final class Escaping
 	}
 
 
-	/** Resolves backslash escapes and HTML entities, as link destinations and titles require. */
+	/**
+	 * Resolves backslash escapes and HTML entities, as link destinations and titles require,
+	 * in one pass, so an escaped & starts no entity.
+	 */
 	public static function unescape(string $s): string
 	{
-		$s = preg_replace('~\\\(' . Patterns::Escapable . ')~', '$1', $s);
-		return Helpers::stripControlChars(html_entity_decode($s, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+		$s = preg_replace_callback(
+			'~\\\(' . Patterns::Escapable . ')|' . Helpers::EntityPattern . '~',
+			fn($m) => $m[1] ?? html_entity_decode($m[0], ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+			$s,
+		);
+		return Helpers::stripControlChars($s);
 	}
 
 

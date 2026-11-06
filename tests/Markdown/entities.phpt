@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
 /**
- * Test: entity decoding never smuggles control characters into the AST -
- * they collide with the marker bytes of Texy's transform passes.
+ * Test: entity decoding starts at no escaped ampersand and never smuggles control
+ * characters into the AST - they collide with the marker bytes of Texy's transform passes.
  */
 
 use Tester\Assert;
@@ -30,5 +30,13 @@ test('control character reference is stripped in link destination and title', fu
 	Assert::same(
 		"<p><a href=\"/url\" title=\"title\">a</a></p>\n",
 		render(new Markdown, '[a](/u&#12;rl "ti&#12;tle")'),
+	);
+});
+
+
+test('an escaped ampersand in link destination and title starts no entity', function () {
+	Assert::same(
+		"<p><a href=\"/f%C3%B6&amp;ouml;\" title=\"ö &amp;ouml;\">a</a></p>\n",
+		render(new Markdown, '[a](/f&ouml;\&ouml; "&ouml; \&ouml;")'),
 	);
 });
