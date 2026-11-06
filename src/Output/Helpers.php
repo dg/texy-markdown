@@ -71,20 +71,11 @@ final class Helpers
 
 
 	/**
-	 * Escape title in link/image (double quotes).
+	 * Escape title in link/image: double quotes, and what is read as an escape or an entity.
 	 */
 	public static function escapeTitle(string $title): string
 	{
-		return str_replace('"', '\"', $title);
-	}
-
-
-	/**
-	 * Escape alt text for images (brackets).
-	 */
-	public static function escapeAlt(string $alt): string
-	{
-		return str_replace(['[', ']'], ['\[', '\]'], $alt);
+		return preg_replace('/"|&(?=#?[a-zA-Z0-9]+;)|\\\\(?=[!-\/:-@[-`{-~]|$)/', '\\\\$0', $title);
 	}
 
 

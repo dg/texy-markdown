@@ -532,7 +532,7 @@ class Renderer extends NodeRenderer
 			return $this->renderText(new Nodes\TextNode($alt)); // Just return alt text without image
 		}
 
-		return '![' . Helpers::escapeAlt($alt) . '](' . Helpers::escapeUrl($node->url)
+		return '![' . Helpers::escapeText($alt) . '](' . Helpers::escapeUrl($node->url)
 			. (is_string($title) ? ' "' . Helpers::escapeTitle($title) . '"' : '')
 			. ')';
 	}

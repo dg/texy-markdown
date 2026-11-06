@@ -395,6 +395,21 @@ test('the ampersand of an entity and a tilde are escaped', function () {
 });
 
 
+test('the alternative text of an image and the title of a link read back as they were', function () {
+	$attribute = fn(string $name, string $html) => preg_match("~\\s$name=\"([^\"]*)\"~", $html, $m) ? $m[1] : null;
+	foreach ([
+		'alt' => '[* a.png .(&amp;copy; *x* `y` ~z~ a\b) *]',
+		'title' => '"link .(&amp;copy; a\*b \"q\")":http://a.cz',
+	] as $name => $source) {
+		$texy = new Texy\Texy;
+		$document = $texy->parse($source);
+		$texy->transform($document);
+		$printed = (new Renderer)->render($document);
+		Assert::same($attribute($name, $texy->renderHtml($document)), $attribute($name, Markdown::gfm()->toHtml($printed)), $printed);
+	}
+});
+
+
 test('underscore inside a word is not escaped', function () {
 	Assert::same(
 		"E_USER_WARNING and \\_emphasis\\_ and snake_case\\_\n",
