@@ -12,31 +12,25 @@ use Texy\Markdown\Syntax as MdSyntax;
 use Texy\Node;
 use Texy\Nodes;
 use Texy\NodeTraverser;
-use Texy\Output\Text\Renderer as TextRenderer;
 use Texy\Output\Texy\Renderer as TexyRenderer;
 use Texy\Regexp;
 use Texy\Syntax;
 use Texy\Texy;
-use function count, strlen;
+use function count;
 
 
 /**
  * Prints a Markdown syntax tree as Texy source.
  *
  * The tree records Markdown notation: heading markers, bullets and link syntaxes that
- * mean something else in Texy, and text that is plain in Markdown but may read as Texy
- * syntax. The converter drops the variants, so the Texy printer writes its canonical
- * notation, and escapes the text Texy would take for syntax.
+ * mean something else in Texy, and the positions of texts, which the Texy printer would
+ * take for Texy notation. The converter drops them, so the printer writes its canonical
+ * notation and escapes the text Texy would take for syntax.
  */
 final class TexyConverter
 {
-	/** characters that may start or end Texy syntax, all of them escaped where less is not enough */
-	private const SyntaxChars = '~[*/+^_"\~><`\'\[\]{}&:()#=|\\\\-]~';
-
-	/** reads the escaped text back, as the default Texy does */
+	/** reads the printed source, as the default Texy does */
 	private Texy $texy;
-
-	private bool $strict = false;
 
 
 	public function __construct()
@@ -53,47 +47,10 @@ final class TexyConverter
 		(new NodeTraverser)->traverse($document, leave: $this->adapt(...));
 
 		$renderer = new TexyRenderer($this->texy);
-		$renderer->addRenderer(fn(Nodes\TextNode $node) => $this->escape($node->text));
 		$renderer->addRenderer(fn(MdNodes\SoftBreakNode $node) => "\n");
 		$renderer->addRenderer(fn(MdNodes\RawInlineNode $node) => $node->html);
 		$renderer->addRenderer(fn(MdNodes\HtmlBlockNode $node) => "/--html\n" . trim($node->html, "\n") . "\n\\--");
-		$renderer->addRenderer(
-			fn(Nodes\ParagraphNode $node, TexyRenderer $renderer, \Closure $previous) => $this->renderVerified($node, $renderer, $previous),
-		);
-		$renderer->addRenderer(
-			fn(Nodes\HeadingNode $node, TexyRenderer $renderer, \Closure $previous) => $this->renderVerified($node, $renderer, $previous),
-		);
 		return $renderer->render($document);
-	}
-
-
-	/**
-	 * Text escaped node by node may still read as syntax together with its neighbours,
-	 * so the printed block is read back, and if its text differs, printed again with
-	 * every character escaped that Texy syntax could start with.
-	 * @param  \Closure(Node, TexyRenderer): string  $previous
-	 */
-	private function renderVerified(Nodes\BlockNode $node, TexyRenderer $renderer, \Closure $previous): string
-	{
-		$printed = $previous($node, $renderer);
-		$expected = self::readText(new Nodes\DocumentNode(new Nodes\ContentNode([$node])));
-		if ($this->strict || self::readText($this->texy->parse($printed)) === $expected) {
-			return $printed;
-		}
-
-		$this->strict = true;
-		try {
-			return $previous($node, $renderer);
-		} finally {
-			$this->strict = false;
-		}
-	}
-
-
-	/** The text of the document without whitespace, which Texy and Markdown lay out differently. */
-	private static function readText(Nodes\DocumentNode $document): string
-	{
-		return preg_replace('~\s+~u', '', (new TextRenderer)->render($document));
 	}
 
 
@@ -102,6 +59,9 @@ final class TexyConverter
 	{
 		if ($node instanceof Nodes\ContentNode) {
 			$node->children = self::joinTexts($node->children);
+
+		} elseif ($node instanceof Nodes\TextNode) {
+			$node->range = null;
 
 		} elseif ($node instanceof Nodes\HeadingNode) {
 			// the level of a heading in the syntax tree of Texy is counted from its notation:
@@ -239,52 +199,6 @@ final class TexyConverter
 		}
 
 		return $res;
-	}
-
-
-	/**
-	 * Text written so that Texy reads it back as the same text: where Texy finds syntax
-	 * in it, the first character of that syntax is escaped, until it finds none.
-	 */
-	private function escape(string $text): string
-	{
-		if ($this->strict) {
-			return Regexp::replace($text, self::SyntaxChars, fn($m) => $m[0] === '*' ? '\*' : '&#' . ord($m[0] ?? '') . ';');
-		}
-
-		$from = 0;
-		while (($offset = $this->findSyntax($text, $from)) !== null) {
-			$char = mb_substr(substr($text, $offset), 0, 1);
-			$escaped = $char === '*' ? '\*' : '&#' . mb_ord($char) . ';';
-			$text = substr_replace($text, $escaped, $offset, strlen($char));
-			$from = $offset + strlen($escaped);
-		}
-
-		return $text;
-	}
-
-
-	/** Where, from $from on, Texy reads the text as anything else than plain text. */
-	private function findSyntax(string $text, int $from): ?int
-	{
-		$found = null;
-		(new NodeTraverser)->traverse($this->texy->parse($text, singleLine: true), function (Node $node) use ($from, &$found): ?int {
-			$range = $node->range;
-			$plain = $node instanceof Nodes\DocumentNode
-				|| $node instanceof Nodes\ContentNode
-				|| $node instanceof Nodes\ParagraphNode
-				|| $node instanceof Nodes\UrlNode
-				|| $node instanceof Nodes\EmailNode
-				// an entity is a text written longer than it reads
-				|| ($node instanceof Nodes\TextNode && ($range === null || $range->length === strlen($node->text)));
-			if ($plain || $range === null || $range->offset < $from) {
-				return null;
-			}
-
-			$found = $range->offset;
-			return NodeTraverser::StopTraversal;
-		});
-		return $found;
 	}
 
 

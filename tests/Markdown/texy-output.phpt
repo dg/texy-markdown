@@ -73,7 +73,7 @@ test('Markdown notation becomes Texy notation', function () {
 
 test('text Texy would read as syntax is escaped', function () {
 	$converted = (new Markdown)->toTexy('a "quoted":word, m^2 and \*not em\*');
-	Assert::same("a &#34;quoted\":word, m&#94;2 and \\*not em*\n", $converted);
+	Assert::same("a &quot;quoted\":word, m&#94;2 and \\*not em*\n", $converted);
 	Assert::same('a"quoted":word,m^2and*notem*', readText((new Texy\Texy)->parse($converted)));
 });
 

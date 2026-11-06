@@ -158,12 +158,11 @@ drops a title), so the converter first **drops them** and lets the printer write
 canonical notation. A heading level becomes the level Texy counts from the notation:
 0–3 for the underline characters `#` `*` `=` `-`, then the surrounded `###` and `##`.
 
-The printer escapes text only where Texy itself wrote it escaped, which tells nothing
-about Markdown text. **Text is escaped by reading it back:** Texy parses each text, and
-the first character of whatever it finds there besides plain text and autolinks becomes
-an entity, until it finds nothing; `*` becomes `\*`. A text alone cannot see its
-neighbours (a `*` next to `**strong**`), so every paragraph and heading is read back as a
-whole and compared by its plain text; where it differs, it is printed again with every
+The printer prints a text with a position as it was written in Texy, which tells nothing
+about Markdown text, so the converter **drops the positions of texts** too. A text
+without one the printer reads back: the first character of whatever Texy finds in it
+besides plain text and autolinks becomes an entity, until it finds nothing, and a
+paragraph or heading whose text reads back differently is printed again with every
 character escaped that Texy syntax could start with.
 
 What Texy has no notation for is written as HTML (strikethrough, an emphasis nested in
