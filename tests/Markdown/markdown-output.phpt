@@ -388,6 +388,13 @@ test('escape special characters', function () {
 });
 
 
+test('the ampersand of an entity and a tilde are escaped', function () {
+	$printed = toMarkdown("''&copy; ~~a~~ AT&T''");
+	Assert::same("\\&copy; \\~\\~a\\~\\~ AT&T\n", $printed);
+	Assert::same('&copy; ~~a~~ AT&T', trim((new Texy\Texy)->renderText(Markdown::gfm()->parse($printed))));
+});
+
+
 test('underscore inside a word is not escaped', function () {
 	Assert::same(
 		"E_USER_WARNING and \\_emphasis\\_ and snake_case\\_\n",

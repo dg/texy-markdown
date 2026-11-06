@@ -25,11 +25,15 @@ final class Helpers
 	 */
 	public static function escapeText(string $text): string
 	{
-		// Escape: \ ` * _ [ ] < >
-		// These are the main characters that trigger inline Markdown syntax;
+		// Escape: \ ` * _ [ ] < > ~ and the & of an entity
+		// These are the main characters that trigger inline Markdown syntax, a tilde strikes through in GFM;
 		// a backslash escapes only ASCII punctuation, so before anything else it stays as is (Nette\Forms),
 		// and an underscore inside a word cannot open or close emphasis
-		return preg_replace('/([`*[\]<>]|\\\\(?=[!-\/:-@[-`{-~]|$)|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}]))/u', '\\\$1', $text);
+		return preg_replace(
+			'/([`*[\]<>~]|&(?=#?[a-zA-Z0-9]+;)|\\\\(?=[!-\/:-@[-`{-~]|$)|(?<![\p{L}\p{N}])_|_(?![\p{L}\p{N}]))/u',
+			'\\\$1',
+			$text,
+		);
 	}
 
 
