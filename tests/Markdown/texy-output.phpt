@@ -84,6 +84,9 @@ test('what Texy writes no notation for', function () {
 	Assert::same("<code>a`b</code>\n", $markdown->toTexy('``a`b``'));
 	Assert::same("[link](http://a.cz)s\n", $markdown->toTexy('[link](http://a.cz)s'));
 	Assert::same("link\n", $markdown->toTexy('[link]()'));
+	Assert::same("<a href=\"http://a.cz\">a]b</a>s\n", $markdown->toTexy('[a\]b](http://a.cz)s'));
+	Assert::same("<a href=\"http://a.cz/(b)c\" title=\"T\">a</a>s\n", $markdown->toTexy('[a](<http://a.cz/(b)c> "T")s'));
+	Assert::same("<a href=\"http://a.cz\">[* b.png .(a) *]</a>s\n", $markdown->toTexy('[![a](b.png)](http://a.cz)s'));
 });
 
 

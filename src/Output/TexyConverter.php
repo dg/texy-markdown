@@ -161,7 +161,8 @@ final class TexyConverter
 
 	/**
 	 * Adjacent texts are one text for escaping, a link without a target is replaced by its
-	 * content, and a link whose target would run on into what follows is written as [text](url).
+	 * content, and a link whose target would run on into what follows is written as [text](url),
+	 * or as the tag where that cannot hold it.
 	 * @param  array<Nodes\InlineNode|Nodes\BlockNode>  $children
 	 * @return array<Nodes\InlineNode|Nodes\BlockNode>
 	 */
@@ -182,19 +183,28 @@ final class TexyConverter
 			}
 		}
 
-		// the target of "text":url ends only before a space or punctuation, [text](url) anywhere
+		// the target of "text":url and of an image link ends only before a space or punctuation,
+		// [text](url) anywhere, but its brackets cannot hold a ] or | of the text, nor a ) of the target
 		foreach ($res as $i => $child) {
 			$next = $res[$i + 1] ?? null;
-			if ($child instanceof Nodes\LinkNode
-				&& $child->syntax === null
-				&& $next !== null
-				&& !$next instanceof MdNodes\SoftBreakNode
-				&& !$next instanceof Nodes\LineBreakNode
-				&& !($next instanceof Nodes\TextNode && preg_match('~^[\s:);,.!?]~', $next->text))
+			if (!$child instanceof Nodes\LinkNode
+				|| ($child->syntax !== null && $child->syntax !== Syntax::Image)
+				|| $next === null
+				|| $next instanceof MdNodes\SoftBreakNode
+				|| $next instanceof Nodes\LineBreakNode
+				|| ($next instanceof Nodes\TextNode && preg_match('~^[\s:);,.!?]~', $next->text))
+			) {
+				continue;
+			}
+
+			if ($child->syntax === null
 				&& !preg_match('~[\]|]~', self::textOf($child->content))
 				&& !preg_match('~[\s)]~', (string) $child->url)
 			) {
 				$child->syntax = Syntax::MarkdownLink;
+			} else {
+				$attributes = array_filter(['href' => (string) $child->url, 'title' => $child->modifier?->title]);
+				$res[$i] = self::createElement('a', $attributes, $child->content);
 			}
 		}
 

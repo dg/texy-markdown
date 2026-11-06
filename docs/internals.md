@@ -166,7 +166,8 @@ paragraph or heading whose text reads back differently is printed again with eve
 character escaped that Texy syntax could start with.
 
 What Texy has no notation for is written as HTML (strikethrough, an emphasis nested in
-the same one, a code span with a backtick or edge spaces), an HTML block as `/--html`.
+the same one, a code span with a backtick or edge spaces, a link the text after it would
+run into where `[text](url)` cannot hold its text or target), an HTML block as `/--html`.
 A soft break is a newline; where a default Texy would read the next line as a block, the
 printer makes it a space.
 
