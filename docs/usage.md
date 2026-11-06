@@ -75,10 +75,10 @@ The result is written in Texy's own notation, not in Markdown's: `*em*` becomes
 `//em//`, a link `"text":url`, headings are underlined. Text that Texy would read as
 syntax is escaped with entities, and what Texy writes no notation for comes out as HTML:
 strikethrough as `<del>` (off in Texy by default), an emphasis nested in an emphasis as
-`<em>`, an HTML block as `/--html`. Read by a default `Texy`, the result says what the
-Markdown said, as far as Texy can say it: a link title is lost when the link must be
-written as `[text](url)`, a list numbered above 999 or a list item starting empty does
-not become a list.
+`<em>`, a link that the text after it would run into and whose text, target or title
+`[text](url)` cannot hold as `<a>`, an HTML block as `/--html`. Read by a default
+`Texy`, the result says what the Markdown said, as far as Texy can say it: a list
+numbered above 999 or a list item starting empty does not become a list.
 
 ## Switching syntaxes on and off
 

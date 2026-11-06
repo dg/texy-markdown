@@ -90,6 +90,16 @@ test('what Texy writes no notation for', function () {
 });
 
 
+test('the title of a link is kept', function () {
+	$markdown = new Markdown;
+	Assert::same("\"a .(T)\":http://a.cz s\n", $markdown->toTexy('[a](http://a.cz "T") s'));
+	Assert::same("<a href=\"http://a.cz\" title=\"T\">a</a>s\n", $markdown->toTexy('[a](http://a.cz "T")s'));
+	Assert::same("\"a &quot;b&quot; .(T)\":http://a.cz\n", $markdown->toTexy('[a "b"](http://a.cz "T")'));
+	Assert::same("[a \"b\"](http://a.cz)\n", $markdown->toTexy('[a "b"](http://a.cz)'));
+	Assert::same("\"[* b.png .(a) *] .(T)\":http://a.cz\n", $markdown->toTexy('[![a](b.png)](http://a.cz "T")'));
+});
+
+
 test('a soft break stays a newline unless the next line would read as a block', function () {
 	$markdown = new Markdown;
 	Assert::same("foo\nbar\n", $markdown->toTexy("foo\nbar"));

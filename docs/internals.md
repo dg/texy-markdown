@@ -167,7 +167,7 @@ character escaped that Texy syntax could start with.
 
 What Texy has no notation for is written as HTML (strikethrough, an emphasis nested in
 the same one, a code span with a backtick or edge spaces, a link the text after it would
-run into where `[text](url)` cannot hold its text or target), an HTML block as `/--html`.
+run into where `[text](url)` cannot hold its text, target or title), an HTML block as `/--html`.
 A soft break is a newline; where a default Texy would read the next line as a block, the
 printer makes it a space.
 

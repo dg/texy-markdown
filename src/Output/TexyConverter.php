@@ -150,9 +150,10 @@ final class TexyConverter
 		$node->url = Regexp::replace(str_replace(' ', '%20', $url), '~[:);,.!?]$~', fn($m) => '%' . strtoupper(bin2hex($m[0] ?? '')));
 		$node->ref = null;
 		$node->syntax = match (true) {
-			count($node->content->children) === 1 && $first instanceof Nodes\ImageNode => Syntax::Image,
+			// an image link takes no title of the link
+			count($node->content->children) === 1 && $first instanceof Nodes\ImageNode && $node->modifier?->title === null => Syntax::Image,
 			// the quotes of "text":url cannot hold a quote
-			str_contains($text, '"') && !preg_match('~[\]|)]~', $text . $node->url) => Syntax::MarkdownLink,
+			str_contains($text, '"') && self::fitsBrackets($node) => Syntax::MarkdownLink,
 			default => null,
 		};
 		return $node;
@@ -183,8 +184,7 @@ final class TexyConverter
 			}
 		}
 
-		// the target of "text":url and of an image link ends only before a space or punctuation,
-		// [text](url) anywhere, but its brackets cannot hold a ] or | of the text, nor a ) of the target
+		// the target of "text":url and of an image link ends only before a space or punctuation, [text](url) anywhere
 		foreach ($res as $i => $child) {
 			$next = $res[$i + 1] ?? null;
 			if (!$child instanceof Nodes\LinkNode
@@ -197,10 +197,7 @@ final class TexyConverter
 				continue;
 			}
 
-			if ($child->syntax === null
-				&& !preg_match('~[\]|]~', self::textOf($child->content))
-				&& !preg_match('~[\s)]~', (string) $child->url)
-			) {
+			if ($child->syntax === null && self::fitsBrackets($child)) {
 				$child->syntax = Syntax::MarkdownLink;
 			} else {
 				$attributes = array_filter(['href' => (string) $child->url, 'title' => $child->modifier?->title]);
@@ -209,6 +206,15 @@ final class TexyConverter
 		}
 
 		return $res;
+	}
+
+
+	/** Can [text](url) write the link? Its brackets hold no ] or | of the text, no ) of the target and no title. */
+	private static function fitsBrackets(Nodes\LinkNode $node): bool
+	{
+		return $node->modifier?->title === null
+			&& !preg_match('~[\]|]~', self::textOf($node->content))
+			&& !preg_match('~[\s)]~', (string) $node->url);
 	}
 
 
