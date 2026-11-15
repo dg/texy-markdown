@@ -37,6 +37,12 @@ definition is known, so an unresolvable reference simply **refuses the match** â
 bracket becomes literal text and the patterns behind it get their turn at the same
 position. There is no unresolved-link node and no degradation pass.
 
+The link resolver of `Texy\Config` belongs to the same decision, so it is asked here, in the
+inline phase of `parse()`, and not in `transform()` as in Texy: a link reference without a
+definition goes to it, a definition always wins. Its answer `null` refuses the match like a
+missing definition. An image reference never reaches it, and neither do the brackets behind a
+refused one: `ParseState` remembers where they are, or `![a]` would become `!` and a link.
+
 ### Nodes that must not survive
 
 `DeferredNode` and `DelimiterNode` are scaffolding; the parse-time `Parsing\PendingImageNode` is
@@ -154,10 +160,13 @@ like something to simplify:
 
 - **A refused link is searched again from its next character, which lies inside its text.**
   Parsing that text again on every level doubles the work with each level of brackets, so a
-  reference without a definition is refused before its text is read, and `ParseState` keeps
-  the parsed text of a link by its position. Positions are local to one piece of inline
-  content: `InlineParsePass` drops the kept texts before each one, or two paragraphs would
-  share nodes.
+  reference nothing resolves is refused before its text is read, and `ParseState` keeps the
+  parsed text of a link by its position. The link resolver is asked only about a name that can
+  be a label, which holds no bracket, so it is not asked at every level of nested brackets
+  either; `ParseState` keeps its answer by the position of the link too, since a link inside the
+  text of a refused one is tried again and the resolver is called once per link. Positions are
+  local to one piece of inline content: `InlineParsePass` drops what is kept before each one, or
+  two paragraphs would share nodes.
 - **`EmphasisPass` keeps the children and the delimiter runs as linked lists.** Taking a pair
   out of an array rebuilds it, which makes the pairing quadratic.
 - **A paragraph grows by `OffsetMap::add()`**, not by building its map again for every line.

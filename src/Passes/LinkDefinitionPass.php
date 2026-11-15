@@ -90,7 +90,7 @@ final class LinkDefinitionPass
 	 */
 	private static function match(string $text): ?array
 	{
-		if (!preg_match('~^[ ]{0,3}\[((?:[^\[\]\\\]|\\\.){1,999}+)\]:~', $text, $m)) {
+		if (!preg_match('~^[ ]{0,3}\[(' . Patterns::LinkLabel . ')\]:~', $text, $m)) {
 			return null;
 		}
 

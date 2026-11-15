@@ -31,6 +31,7 @@ final class LinkModule extends Texy\Module
 {
 	public function __construct(
 		private ParseState $state,
+		private Texy\Config $config,
 	) {
 	}
 
@@ -72,16 +73,19 @@ final class LinkModule extends Texy\Module
 			);
 		}
 
-		$definition = $this->resolve($m['ref'], $label);
-		return $definition === null
-			? null
-			: new PendingImageNode(
-				$definition['url'],
-				$ctx->parseInline($label, $offsets['brk'] + 1),
-				$definition['title'],
-				$range,
-				self::locateTarget($m, $offsets),
-			);
+		$definition = $this->state->findDefinition(self::getReference($m['ref'], $label));
+		if ($definition === null) {
+			$this->state->addUnresolvedImage($offsets['brk'], $offsets['ref'] ?? null);
+			return null;
+		}
+
+		return new PendingImageNode(
+			$definition['url'],
+			$ctx->parseInline($label, $offsets['brk'] + 1),
+			$definition['title'],
+			$range,
+			self::locateTarget($m, $offsets),
+		);
 	}
 
 
@@ -98,10 +102,17 @@ final class LinkModule extends Texy\Module
 			return null;
 		}
 
-		// an unresolvable reference is refused before its text is read
-		$definition = $m['inl'] === null ? $this->resolve($m['ref'], $label) : null;
-		if ($m['inl'] === null && $definition === null) {
-			return null;
+		if ($m['inl'] !== null) {
+			$ref = null;
+			$url = Escaping::cleanDestination($m['dest'] ?? '');
+			$title = Escaping::cleanTitle($m['ttl']);
+		} else {
+			$ref = self::getReference($m['ref'], $label);
+			['url' => $url, 'title' => $title] = $this->state->findDefinition($ref) ?? ['url' => null, 'title' => null];
+			// a reference neither the document nor the resolver can resolve is refused before its text is read
+			if ($url === null && !$this->isResolvable($ref, $offsets['brk'])) {
+				return null;
+			}
 		}
 
 		$textOffset = $offsets['brk'] + 1;
@@ -110,37 +121,26 @@ final class LinkModule extends Texy\Module
 			return null; // links may not nest
 		}
 
-		$range = new Range($offsets[0], strlen($m[0]));
-		$textRange = new Range($textOffset, strlen($label));
-		if ($definition === null) {
-			return new Nodes\LinkNode(
-				Escaping::cleanDestination($m['dest'] ?? ''),
-				$content,
-				Titles::forLink(Escaping::cleanTitle($m['ttl'])),
-				$range,
-				syntax: Syntax::Link,
-				textRange: $textRange,
-				urlRange: self::locateTarget($m, $offsets),
-			);
-		}
-
-		return new Nodes\LinkNode(
-			$definition['url'],
+		$link = new Nodes\LinkNode(
+			$url,
 			$content,
-			Titles::forLink($definition['title']),
-			$range,
-			ref: self::getReference($m['ref'], $label),
+			Titles::forLink($title),
+			new Range($offsets[0], strlen($m[0])),
+			isBareRef: $ref !== null && strlen($m['ref'] ?? '') <= 2, // [page] or [page][]
+			ref: $ref,
 			syntax: Syntax::Link,
-			textRange: $textRange,
+			textRange: new Range($textOffset, strlen($label)),
 			urlRange: self::locateTarget($m, $offsets),
 		);
-	}
 
+		if ($ref === null || $url !== null) {
+			return $link;
+		}
 
-	/** @return ?array{url: string, title: ?string} */
-	private function resolve(?string $ref, string $label): ?array
-	{
-		return $this->state->findDefinition(self::getReference($ref, $label));
+		return $this->state->resolveLink($offsets[0], strlen($m[0]), function () use ($ref, $link): ?Nodes\LinkNode {
+			$link->url = $this->config->resolveLink($ref, $link);
+			return $link->url === null ? null : $link;
+		});
 	}
 
 
@@ -151,6 +151,19 @@ final class LinkModule extends Texy\Module
 	private static function getReference(?string $ref, string $label): string
 	{
 		return $ref !== null && $ref !== '' && $ref !== '[]' ? substr($ref, 1, -1) : $label;
+	}
+
+
+	/**
+	 * Is a reference without a definition offered to the link resolver? Only one whose name
+	 * could be the label of a definition, and never the brackets of an image.
+	 */
+	private function isResolvable(string $ref, int $offset): bool
+	{
+		return $this->config->linkResolver !== null
+			&& !$this->state->isImageBracket($offset)
+			&& trim($ref) !== ''
+			&& preg_match('~' . Patterns::LinkLabel . '$~AD', $ref);
 	}
 
 

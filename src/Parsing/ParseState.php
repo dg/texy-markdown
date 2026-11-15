@@ -8,12 +8,15 @@
 namespace Texy\Markdown\Parsing;
 
 use Texy\Nodes\ContentNode;
+use Texy\Nodes\LinkNode;
+use function array_key_exists;
 
 
 /**
- * Mutable state of one parse: the link reference definitions LinkDefinitionPass collects.
- * Syntax handlers hold this object and Markdown::parse() resets it, so a Markdown instance
- * is reusable but not reentrant.
+ * Mutable state of one parse: the link reference definitions LinkDefinitionPass collects, and
+ * what the links of the inline content being read leave behind by their position. Syntax
+ * handlers hold this object and Markdown::parse() resets it, so a Markdown instance is
+ * reusable but not reentrant.
  *
  * @internal
  */
@@ -25,11 +28,17 @@ final class ParseState
 	/** @var array<string, ContentNode>  texts of links parsed in the inline content being read, by their position */
 	private array $linkTexts = [];
 
+	/** @var array<string, ?LinkNode>  links the resolver was asked about in the inline content being read, by their position */
+	private array $resolvedLinks = [];
+
+	/** @var array<int, true>  brackets of image references without a definition in the inline content being read, by their position */
+	private array $imageBrackets = [];
+
 
 	public function reset(): void
 	{
 		$this->definitions = [];
-		$this->linkTexts = [];
+		$this->forgetPositions();
 	}
 
 
@@ -44,10 +53,45 @@ final class ParseState
 	}
 
 
-	/** Positions in another inline content mean other texts. */
-	public function forgetLinkTexts(): void
+	/**
+	 * A link the resolver finishes, or null when it refuses it, asked once however many times the
+	 * link is tried: a link inside the text of a refused one is tried again.
+	 * @param  \Closure(): ?LinkNode  $resolve
+	 */
+	public function resolveLink(int $offset, int $length, \Closure $resolve): ?LinkNode
+	{
+		$key = "$offset:$length";
+		return array_key_exists($key, $this->resolvedLinks)
+			? $this->resolvedLinks[$key]
+			: $this->resolvedLinks[$key] = $resolve();
+	}
+
+
+	/**
+	 * The brackets of an image reference without a definition, of its text and of its label,
+	 * are no link for the link resolver: the reference stays text.
+	 */
+	public function addUnresolvedImage(int $text, ?int $label): void
+	{
+		$this->imageBrackets[$text] = true;
+		if ($label !== null) {
+			$this->imageBrackets[$label] = true;
+		}
+	}
+
+
+	public function isImageBracket(int $offset): bool
+	{
+		return isset($this->imageBrackets[$offset]);
+	}
+
+
+	/** Positions in another inline content mean other links. */
+	public function forgetPositions(): void
 	{
 		$this->linkTexts = [];
+		$this->resolvedLinks = [];
+		$this->imageBrackets = [];
 	}
 
 

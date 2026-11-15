@@ -61,6 +61,55 @@ $html = $renderer->render($document);
 Typography is a transform over the AST, not something the renderer does. For the raw HTML of a
 document see below.
 
+## Names the document does not define
+
+A reference link, `[text][name]`, `[name][]` or `[name]`, leads where the definition
+`[name]: url` of the document says. A name the document does not define goes to the link
+resolver of the configuration, the same one Texy asks:
+
+```php
+$markdown->config->linkResolver = fn(string $name) => match ($name) {
+    'php' => 'https://php.net/%s',     // [strlen][php]
+    'nette' => 'https://nette.org',    // [nette]
+    default => null,
+};
+```
+
+It gets the name as written, neither case-folded nor unescaped: the label of a full reference,
+the text of a collapsed or shortcut one. It returns the URL, in which `%s` stands for the text of
+the link, or `null`, and the brackets stay text as if the resolver were not there. A definition of
+the document always wins, and a `%s` in its URL is kept as written. The URL goes through
+`$markdown->urlPolicy` like one written by the author. An image reference, `![alt][name]`, does not
+reach the resolver; without a definition it stays text.
+
+The resolver is called once per link, also with the `LinkNode`, which it may change. A shortcut or
+collapsed reference has `LinkNode::$isBareRef`, its text is its name and `%s` is not replaced in it;
+a wiki gives it the title of the page as its text. A title of the link is set on its modifier, where
+`[text](url "title")` keeps its own:
+
+```php
+$markdown->config->linkResolver = function (string $name, Texy\Nodes\LinkNode $link) use ($wiki): ?string {
+    $page = $wiki->findPage($name);
+    if ($page && $link->isBareRef) {
+        $link->content = Texy\Nodes\ContentNode::fromText($page->title);
+    }
+    if ($page) {
+        $link->modifier = new Texy\Modifier(title: $page->summary);
+    }
+    return $page?->url;
+};
+```
+
+Two things differ from Texy:
+
+- **The resolver runs in `parse()`**, not in `transform()`. Whether brackets are a link at all is
+  decided by the reference, so the syntax tree already holds the resolved links.
+- **It must be strict.** In Markdown any `[word]` may be a reference, so a resolver that returns a
+  URL for every name turns `[sic]`, a citation `[1]` and, with task lists off, the `[x]` of a task
+  into links. Let it return a URL only for names it really knows. It is never asked about a name that cannot
+  be a label of a definition: a blank one, one longer than 999 characters or one with a bracket
+  inside.
+
 ## Markdown
 
 The other direction renders any Texy AST — including one Texy itself parsed — back to

@@ -40,7 +40,7 @@ final class InlineParsePass
 			$res = [];
 			foreach ($node->children as $child) {
 				if ($child instanceof DeferredNode) {
-					$this->state->forgetLinkTexts();
+					$this->state->forgetPositions();
 					// trailing whitespace closes no construct: a hard break needs a line after it
 					$parsed = $this->context->parseInline(rtrim($child->text));
 					$child->map->applyTo($parsed);

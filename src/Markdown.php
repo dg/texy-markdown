@@ -296,7 +296,7 @@ final class Markdown
 			new Modules\ListModule,
 			new Modules\HeadingModule,
 			new Modules\ParagraphModule,
-			new Modules\LinkModule($this->state),
+			new Modules\LinkModule($this->state, $this->config),
 			new Modules\EmphasisModule,
 			new Modules\EntityModule,
 			new Modules\TableModule,

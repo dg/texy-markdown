@@ -51,6 +51,9 @@ final class Patterns
 	/** Brackets and parentheses nest at most this deep; the specification allows a limit for the parentheses of a destination only. */
 	public const MaxNesting = 32;
 
+	/** The text of a link reference label, without its brackets; it must not be blank either. */
+	public const LinkLabel = '(?:[^\[\]\\\]|\\\.){1,999}+';
+
 	public const LinkTitle = '(?:"(?:[^"\\\]++|\\\.)*+"|\'(?:[^\'\\\]++|\\\.)*+\'|\((?:[^()\\\]++|\\\.)*+\))';
 
 	/** Characters a backslash may escape. */

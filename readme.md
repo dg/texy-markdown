@@ -34,6 +34,11 @@ Typography, link roots and the HTML policy are configured on the instance:
     $markdown->htmlOutput->linkBaseUrl = '/docs/';
     $markdown->htmlPolicy->allowedTags = ['b' => []];
 
+A reference to a name the document does not define, `[name]`, goes to the link resolver
+Texy uses as well:
+
+    $markdown->config->linkResolver = fn(string $name) => $wiki->findPage($name)?->url;
+
 GitHub Flavored Markdown adds tables, task lists, strikethrough, extended autolinks
 and the disallowed-raw-HTML filter:
 
