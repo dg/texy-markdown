@@ -311,6 +311,9 @@ final class Markdown
 		new Passes\InlineParsePass($this->engine->createParseContext($this->allowedSyntax), $this->state)->process($document);
 		(new Passes\EmphasisPass)->process($document);
 		(new Passes\ImagePass)->process($document);
+		if (!$this->config->mergeLines) {
+			(new Passes\HardBreakPass)->process($document);
+		}
 	}
 
 

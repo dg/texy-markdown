@@ -39,6 +39,13 @@ $markdown->htmlPolicy->allowedTags = ['b' => []]; // what raw HTML may hold
 $markdown->urlPolicy->linkPattern = '~https?:~A';
 ```
 
+A newline inside a paragraph is a soft break by default. `mergeLines = false` makes every newline
+a hard line break (the option other implementations call `breaks`):
+
+```php
+$markdown->config->mergeLines = false;   // "a\nb" gives <p>a<br>\nb</p>
+```
+
 Unlike Texy, typography defaults to the locale `en` and hyphenation is off. The defaults apply
 to the object `Markdown` creates itself; for an application using both languages, hand in the
 objects of Texy, which are shared with their changes:

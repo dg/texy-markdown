@@ -18,7 +18,9 @@ So the phases are cut apart:
    the raw text instead of parsing it.
 2. **Syntax passes** over the whole document, still inside `parse()`, in order:
    `LinkDefinitionPass` (collects the definitions), `TaskListPass`, `InlineParsePass`
-   (the inline phase), `EmphasisPass`, `ImagePass`.
+   (the inline phase), `EmphasisPass`, `ImagePass`, and `HardBreakPass` when `Config::$mergeLines`
+   is off (every soft break becomes a hard one; it runs after `ImagePass`, which has already
+   flattened the alternative texts).
 
 They all finish recognizing the source, so `parse()` returns the syntax tree, the same
 state `Texy::parse()` does. `transform()` then applies the meaning: `TagFilterPass`,
